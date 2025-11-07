@@ -6,7 +6,7 @@ My proxmox kubernetes homelab running on:
 - 1.5 Tb ssd
 - Nvidia Geforce RTX 2080
 
-Read how i got here at [my blog.](https://erikak.no/blog)
+Read how i got here at [my blog.](https://www.erikak.no/blog)
 
 ## install order
 
