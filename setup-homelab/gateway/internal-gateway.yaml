@@ -1,0 +1,42 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: internal
+  namespace: gateway
+spec:
+  gatewayClassName: cilium
+  addresses:
+    - type: IPAddress
+      value: 192.168.1.152
+  listeners:
+    - protocol: TLS
+      port: 443
+      name: tls-passthrough
+      hostname: "*.erikak.no"
+      tls:
+        mode: Passthrough
+      allowedRoutes:
+        namespaces:
+          from: All
+    - protocol: HTTPS
+      port: 443
+      name: https-gateway
+      hostname: "*.erikak.no"
+      tls:
+        certificateRefs:
+          - kind: Secret
+            name: cert-erikak
+      allowedRoutes:
+        namespaces:
+          from: All
+    - protocol: HTTPS
+      port: 443
+      name: https-domain-gateway
+      hostname: erikak.no
+      tls:
+        certificateRefs:
+          - kind: Secret
+            name: cert-erikak
+      allowedRoutes:
+        namespaces:
+          from: All

@@ -1,0 +1,20 @@
+tunnel: talos-tunnel
+credentials-file: /etc/cloudflared/credentials/credentials.json
+metrics: 0.0.0.0:2000
+no-autoupdate: true
+
+warp-routing:
+  enabled: true
+
+ingress:
+  - hostname: "*.erikak.no"
+    service: https://cilium-gateway-external.gateway.svc.cluster.local:443
+    originRequest:
+      originServerName: "*.erikak.no"
+
+  - hostname: "erikak.no"
+    service: https://cilium-gateway-external.gateway.svc.cluster.local:443
+    originRequest:
+      originServerName: "erikak.no"
+
+  - service: http_status:404

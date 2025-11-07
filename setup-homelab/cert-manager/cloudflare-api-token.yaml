@@ -1,0 +1,15 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: cloudflare-api-token
+  namespace: gateway
+spec:
+  encryptedData:
+    api-token: AgBPiF08o9DKW4P7WcrvPyIVN+SrJ4K4fC7GLiXsJYTWbJFOSogKo7iYaHpSXOLmD+ztUwyqrVJYhSTDdG+/KShLFFxqO4vG3qMacaCXSURbEFGQEZT7CMw/WllYrR7/XGxKSACtLPpTTRF2UlLe61mF2zoLGIo6yrRi9IvgJwEwTAMFP3GG5GADq+5chWaEhlPafVl3LcECqAiiB+kwyiZUqZK5NzCFn+EcPyysQVg6ZjeTlRoNbAR91dKyEMtAmH70KXb+kVHksAmNgYvUVQy5eUtBgoYhDgT/lpDjJnRJOcVNF/t4GNoQIR/KbTIzPSpbBPk0ECahffF2S3ayb7ByPSblVCNJe3HTgYspblQnuBqRbB6BAZRTGvbJ4trcONinJVdTpgDaKZafC/fS2758TKnRg+bZYzAMq49lMz1CkYFYuo2kV27hUdzpDBigd9dz8ObliM1tIcWamFFUYLF6T3osRdtQ2Hf4XNJh5erqfUiKYpwfWnqNxlxQ9o1R2QMuYpZxJ05MH3cLp5dOKR8S2tZ5prATe89qRgZCVEuQfzpBPQZd9hfMW+CD/ain0giNNAiA7m4r20grtvC3aMQ63O7SC9wLWX3PnsMnQOEiPVub4mRLz09BRikWzNMAhujP4BxTOCXestCZf7SzYwNF5mkeHIzB5wM96WXmmsvBUhdMN4QHyq65i4WOV3cO6FekxJyKpjdcfnUiOxZP0sFlZ3zEXT6XtXWrLn5NvQsROU1CsGs3D0w0+aa8VseREt1PjA==
+  template:
+    metadata:
+      creationTimestamp: null
+      name: cloudflare-api-token
+      namespace: gateway

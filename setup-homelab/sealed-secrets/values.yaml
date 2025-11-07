@@ -1,0 +1,2 @@
+fullNameOverride: sealed-secrets-controller
+namespace: kube-system
