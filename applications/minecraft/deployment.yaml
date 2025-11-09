@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: minecraft
-          image: itzg/minecraft-server:latest
+          image: ghcr.io/itzg/minecraft-server:latest
           env:
             - name: EULA
               value: "TRUE"
