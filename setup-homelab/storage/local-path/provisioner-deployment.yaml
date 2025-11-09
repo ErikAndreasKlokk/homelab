@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: local-path-provisioner
+  namespace: local-path-storage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: local-path-provisioner
+  template:
+    metadata:
+      labels:
+        app: local-path-provisioner
+    spec:
+      serviceAccountName: local-path-provisioner
+      containers:
+        - name: local-path-provisioner
+          image: rancher/local-path-provisioner:latest
+          imagePullPolicy: Always
+          command:
+            - local-path-provisioner
+            - --debug
+            - start
+            - --config
+            - /etc/config/config.json
+          volumeMounts:
+            - mountPath: /etc/config
+              name: config-volume
+      volumes:
+        - name: config-volume
+          configMap:
+            name: local-path-config

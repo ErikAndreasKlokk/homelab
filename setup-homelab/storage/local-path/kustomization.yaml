@@ -5,3 +5,6 @@ namespace: local-path-storage
 resources:
   - ns.yaml
   - storageclass.yaml
+  - provisioner-sa.yaml
+  - provisioner-config.yaml
+  - provisioner-deployment.yaml
