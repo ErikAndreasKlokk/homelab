@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: storage
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/erikandreasklokk/homelab
+        revision: HEAD
+        directories:
+          - path: setup-homelab/storage/*
+  template:
+    metadata:
+      name: '{{ path.basename }}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: storage
+      source:
+        repoURL: https://github.com/erikandreasklokk/homelab
+        targetRevision: HEAD
+        path: '{{ path }}'
+      destination:
+        name: in-cluster
+        namespace: '{{path.basename}}'
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: true
