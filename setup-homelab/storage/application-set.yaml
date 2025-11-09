@@ -23,7 +23,7 @@ spec:
         path: '{{ path }}'
       destination:
         name: in-cluster
-        namespace: argocd
+        namespace: local-path-storage
       syncPolicy:
         automated:
           selfHeal: true
