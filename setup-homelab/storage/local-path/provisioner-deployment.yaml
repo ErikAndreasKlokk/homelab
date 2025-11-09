@@ -18,11 +18,6 @@ spec:
         - name: local-path-provisioner
           image: ghcr.io/rancher/local-path-provisioner/charts/local-path-provisioner:0.0.32
           imagePullPolicy: IfNotPresent
-          args:
-            - "start"
-            - "--debug"
-            - "--config"
-            - "/etc/config/config.json"
           volumeMounts:
             - mountPath: /etc/config
               name: config-volume
