@@ -6,7 +6,7 @@ metadata:
 spec:
   parentRefs:
     - name: external
-      namespace: portfolio
+      namespace: gateway
   hostnames:
     - "www.erikak.no"
     - "erikak.no"
