@@ -11,7 +11,7 @@ spec:
   listeners:
     - protocol: HTTPS
       port: 443
-      name: https-gateway
+      name: https-wildcard
       hostname: "*.erikak.no"
       tls:
         certificateRefs:
@@ -22,12 +22,18 @@ spec:
           from: All
     - protocol: HTTPS
       port: 443
-      name: https-domain-gateway
+      name: https-root
       hostname: erikak.no
       tls:
         certificateRefs:
           - kind: Secret
             name: cert-erikak
+      allowedRoutes:
+        namespaces:
+          from: All
+    - protocol: TCP
+      port: 25565
+      name: minecraft
       allowedRoutes:
         namespaces:
           from: All

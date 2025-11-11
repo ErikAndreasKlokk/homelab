@@ -1,7 +1,7 @@
 apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+kind: TCPRoute
 metadata:
-  name: http-route
+  name: minecraft
   namespace: minecraft
 spec:
   parentRefs:
@@ -10,10 +10,6 @@ spec:
   hostnames:
     - "minecraft.erikak.no"
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
+    - backendRefs:
         - name: minecraft
-          port: 8080
+          port: 25565
