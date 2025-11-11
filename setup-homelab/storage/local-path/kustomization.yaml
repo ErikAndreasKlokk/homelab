@@ -6,5 +6,9 @@ resources:
   - ns.yaml
   - storageclass.yaml
   - provisioner-sa.yaml
+  - provisioner-role.yaml
   - provisioner-config.yaml
+  - provisioner-rolebind.yaml
   - provisioner-deployment.yaml
+  - provisioner-clusterrole.yaml
+  - provisioner-clusterrolebind.yaml
