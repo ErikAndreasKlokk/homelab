@@ -15,8 +15,10 @@ spec:
     spec:
       containers:
         - name: minecraft
-          image: ghcr.io/itzg/minecraft-server:java17-graalvm
+          image: ghcr.io/itzg/minecraft-server:java21
           env:
+            - name: VERSION
+              value: "LATEST"
             - name: EULA
               value: "TRUE"
             - name: MEMORY
