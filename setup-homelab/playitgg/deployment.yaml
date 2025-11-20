@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playit-agent
+  namespace: playitgg
+  labels:
+    app: playit-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: playit-agent
+  template:
+    metadata:
+      labels:
+        app: playit-agent
+    spec:
+      containers:
+        - name: playit-agent
+          image: ghcr.io/playit-cloud/playit-agent:latest
+          env:
+            - name: PLAYIT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: playitgg-agent-token
+                  key: agent-token
+            - name: PLAYIT_TUNNEL_1_HOST
+              value: "mc1.minecraft.svc.cluster.local"
+            - name: PLAYIT_TUNNEL_1_PORT
+              value: "25565"

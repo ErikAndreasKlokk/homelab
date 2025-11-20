@@ -20,5 +20,12 @@ Read how i got here at [my blog.](https://www.erikak.no/blog)
 ## nice commands to remember for myself
 
 ```bash
+kubectl create secret generic name \
+  --from-file=key=file.txt \
+  -n namespace \
+  --dry-run=client -o yaml > secret.yaml
+```
+
+```bash
 kubeseal -f secret.yaml -w mysealedsecret.yaml
 ```

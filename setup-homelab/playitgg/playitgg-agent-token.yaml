@@ -1,0 +1,12 @@
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: playitgg-agent-token
+  namespace: playitgg
+spec:
+  encryptedData:
+    agent-token: AgDjUTYi+I/yOHPhYpCh6+Mvikcola34vjifWQxuioxnx1xEjug9Fih5yPxqpDDm8WD2of94c6kIT9HMHTIhzmYw2IsVAQ3ZTKMBf9wjSo5zO/90l57toEzZVOofFX1thLHaFyb0e5azbiXs+zfgLgk6+naGj4t2OUrqqHKV3PejjNki9Zpc1x2mlvKQY4wZo5JveqkhuhN1zgfXWB/hp4MH1b2fFvkkyjjN1pIPZNloDGFlua7NKwaMVBPsSEkVM+6DeAz+Wlnzs/GnI5UdKbZPPo3j2TgrYxDemFvv9YtO6qPfY89YND08gakFGOwTCILBd5LEcQoC8blbOW8hHOk9sjSQ41c6PN+BlfDmI2vkuCMe7MxSuKmaS6/AaKR8jwpqj4cICvVO0smz0YR3EwpMldO9Ifi9MIJ9nGBotQsBHTHWuVLXdIvE1XXUQzE6q/3lQjreabJH/KCQyMGWIf1CIh8cMhNP5iSSNJ+8uucsp+vs6kmNXCSURcdKllWZaluYDU3l1em9byZ3D52sGw+s8Obhlg06vIA+dqjC5BkXN9LWPx0wCdKoYIf0UKRk3PAZSDjxjycogOqEYJ9ZsWRziHtx4yr2q8Cxy7pUp/9TRk6BXAHJV7LXag1QICaBMud1g/PwLah6c0wWY2dbK+YxmZ7fsVUUdDt5cPR6CsdWhLJrfZZgRty9UVzCqmm7Oy+A9lTPbTVaa9n2W0KAD9CSgl2p5gjFoPOcAMQXVIi1TDKmyQs4ulPV4/KKz6/nMKJRcI6sLzFHUSRYgqRS2dlBbg==
+  template:
+    metadata:
+      name: playitgg-agent-token
+      namespace: playitgg
