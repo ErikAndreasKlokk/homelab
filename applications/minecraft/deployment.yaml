@@ -23,6 +23,8 @@ spec:
               value: "TRUE"
             - name: MEMORY
               value: "11G"
+            - name: SERVER_IP
+              value: 0.0.0.0
           ports:
             - containerPort: 25565
           volumeMounts:
