@@ -19,7 +19,7 @@ spec:
         - name: playit-agent
           image: ghcr.io/playit-cloud/playit-agent:latest
           env:
-            - name: PLAYIT_SECRET_KEY
+            - name: SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: playitgg-agent-token
