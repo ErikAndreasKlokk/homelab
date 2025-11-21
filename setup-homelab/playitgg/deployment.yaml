@@ -25,6 +25,6 @@ spec:
                   name: playitgg-agent-token
                   key: agent-token
             - name: PLAYIT_TUNNEL_1_HOST
-              value: "192.168.1.152"
+              value: "minecraft.minecraft.svc.cluster.local"
             - name: PLAYIT_TUNNEL_1_PORT
-              value: "32565"
+              value: "25565"
