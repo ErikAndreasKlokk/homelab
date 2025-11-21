@@ -24,7 +24,3 @@ spec:
                 secretKeyRef:
                   name: playitgg-agent-token
                   key: agent-token
-            - name: PLAYIT_TUNNEL_1_HOST
-              value: "minecraft.minecraft.svc.cluster.local"
-            - name: PLAYIT_TUNNEL_1_PORT
-              value: "25565"
