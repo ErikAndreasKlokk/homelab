@@ -32,7 +32,7 @@ spec:
             - name: SERVER_IP
               value: "0.0.0.0"
             - name: MODRINTH_ALLOWED_VERSION_TYPE
-              value: "release"
+              value: "alpha"
           ports:
             - containerPort: 25565
           volumeMounts:
