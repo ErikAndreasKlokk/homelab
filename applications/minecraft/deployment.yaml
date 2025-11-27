@@ -17,14 +17,22 @@ spec:
         - name: minecraft
           image: ghcr.io/itzg/minecraft-server:java21
           env:
-            - name: VERSION
-              value: "LATEST"
             - name: EULA
               value: "TRUE"
             - name: MEMORY
-              value: "11G"
+              value: "16G"
+            - name: TYPE
+              value: "FABRIC"
+            - name: VERSION
+              value: "LATEST"
+            - name: FABRIC_LOADER_VERSION
+              value: "LATEST"
+            - name: MODRINTH_PROJECTS
+              value: "lithium,ferrite-core,krypton,vmp,c2me-fabric"
             - name: SERVER_IP
-              value: 0.0.0.0
+              value: "0.0.0.0"
+            - name: MODRINTH_ALLOWED_VERSION_TYPE
+              value: "release"
           ports:
             - containerPort: 25565
           volumeMounts:
