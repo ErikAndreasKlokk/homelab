@@ -28,7 +28,7 @@ spec:
             - name: FABRIC_LOADER_VERSION
               value: "LATEST"
             - name: MODRINTH_PROJECTS
-              value: "lithium,ferrite-core,krypton,vmp,c2me-fabric"
+              value: "lithium,ferrite-core,krypton,vmp-fabric,c2me-fabric"
             - name: SERVER_IP
               value: "0.0.0.0"
             - name: MODRINTH_ALLOWED_VERSION_TYPE
