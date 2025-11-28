@@ -33,6 +33,20 @@ spec:
               value: "0.0.0.0"
             - name: MODRINTH_ALLOWED_VERSION_TYPE
               value: "alpha"
+            - name: MOTD
+              value: "SPK sin uoffisielle minecraft server"
+            - name: DIFFICULTY
+              value: "hard"
+            - name: OPS
+              value: "NorskApe"
+            - name: MAX_PLAYERS
+              value: "50"
+            - name: SIMULATION_DISTANCE
+              value: "32"
+            - name: VIEW_DISTANCE
+              value: "32"
+            - name: SPAWN_PROTECTION
+              value: "0"
           ports:
             - containerPort: 25565
           volumeMounts:
