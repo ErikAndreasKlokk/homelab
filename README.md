@@ -12,11 +12,11 @@ Read how i got here at [my blog.](https://www.erikak.no/blog)
 
 - [setup-homelab/sealed-secrets](/setup-homelab/sealed-secrets)
 - [setup-homelab/cilium](/setup-homelab/cilium)
-- [setup-homelab/cert-manager](/setup-homelab/cert-manager)
 - [setup-homelab/gateway](/setup-homelab/gateway)
+- [setup-homelab/cert-manager](/setup-homelab/cert-manager)
 - [setup-homelab/cloudflared](/setup-homelab/cloudflared)
-- [setup-homelab/argocd](/setup-homelab/argocd)
 - [setup-homelab/playitgg](/setup-homelab/playitgg)
+- [setup-homelab/argocd](/setup-homelab/argocd)
 
 ## nice commands to remember for myself
 

@@ -31,9 +31,3 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
-    - protocol: TCP
-      port: 25565
-      name: minecraft
-      allowedRoutes:
-        namespaces:
-          from: All
