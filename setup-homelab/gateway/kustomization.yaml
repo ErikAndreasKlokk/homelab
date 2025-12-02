@@ -5,3 +5,4 @@ resources:
   - gateway.yaml
   - cert-erikak.yaml
   - gateway-class.yaml
+  - ns.yaml
