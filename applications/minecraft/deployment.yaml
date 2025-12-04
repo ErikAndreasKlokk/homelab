@@ -42,9 +42,9 @@ spec:
             - name: MAX_PLAYERS
               value: "50"
             - name: SIMULATION_DISTANCE
-              value: "32"
+              value: "20"
             - name: VIEW_DISTANCE
-              value: "32"
+              value: "20"
             - name: SPAWN_PROTECTION
               value: "0"
           ports:
