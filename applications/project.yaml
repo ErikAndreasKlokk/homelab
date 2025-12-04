@@ -13,6 +13,8 @@ spec:
       server: '*'
     - namespace: 'minecraft'
       server: '*'
+    - namespace: 'immich'
+      server: '*'
   clusterResourceWhitelist:
     - group: '*'
       kind: '*'
