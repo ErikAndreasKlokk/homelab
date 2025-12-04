@@ -1,0 +1,4 @@
+immich:
+  persistence:
+    library:
+      existingClaim: immich-data 
