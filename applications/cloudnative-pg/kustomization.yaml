@@ -1,11 +1,13 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: cloudnative-pg
-
 resources:
+#    Installed these manually to avoid issues with ArgoCD and CRDs
+#  - https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.24/config/crd/bases/postgresql.cnpg.io_backups.yaml
+#  - https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.24/config/crd/bases/postgresql.cnpg.io_clusters.yaml
+#  - https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.24/config/crd/bases/postgresql.cnpg.io_poolers.yaml
+#  - https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.24/config/crd/bases/postgresql.cnpg.io_scheduledbackups.yaml
   - ns.yaml
-  - https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.24/config/crd/bases/postgresql.cnpg.io_poolers.yaml
 
 helmCharts:
   - name: cloudnative-pg
@@ -13,3 +15,6 @@ helmCharts:
     version: 0.22.1
     releaseName: cloudnative-pg
     namespace: cloudnative-pg
+    valuesInline:
+      crds:
+        create: false
