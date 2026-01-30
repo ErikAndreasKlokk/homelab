@@ -1,4 +1,18 @@
 immich:
   persistence:
     library:
-      existingClaim: immich-data 
+      existingClaim: immich-data
+
+postgresql:
+  enabled: true
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+valkey:
+  enabled: true
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
