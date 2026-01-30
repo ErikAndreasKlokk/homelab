@@ -21,6 +21,8 @@ spec:
         repoURL: https://github.com/erikandreasklokk/homelab
         targetRevision: HEAD
         path: '{{ path }}'
+        plugin:
+          name: kustomize-build-with-helm
       destination:
         name: in-cluster
         namespace: '{{path.basename}}'

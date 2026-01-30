@@ -9,7 +9,7 @@ resources:
 
 helmCharts:
   - name: immich
-    repo: ghcr.io/immich-app/immich-charts/immich
+    repo: https://immich-app.github.io/immich-charts
     version: 0.10.3
     releaseName: "immich"
     namespace: immich
