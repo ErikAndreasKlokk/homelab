@@ -4,7 +4,6 @@ kind: Kustomization
 namespace: immich
 
 resources:
-  - ns.yaml
   - postgresql-password.yaml
 
 helmCharts:
@@ -17,7 +16,7 @@ helmCharts:
       auth:
         username: immich
         database: immich
-        existingSecret: immich-postgresql-secret  # Reference the sealed secret
+        existingSecret: immich-postgresql-secret
         secretKeys:
           adminPasswordKey: postgres-password
           userPasswordKey: password
