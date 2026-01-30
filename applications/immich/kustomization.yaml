@@ -6,6 +6,7 @@ resources:
   - http-route.yaml
   - pvc.yaml
   - svc.yaml
+  - immich-db-secret.yaml
 
 helmCharts:
   - name: immich

@@ -3,16 +3,15 @@ immich:
     library:
       existingClaim: immich-data
 
-postgresql:
-  enabled: true
-  primary:
-    persistence:
-      enabled: true
-      size: 10Gi
-
 valkey:
   enabled: true
-  master:
-    persistence:
-      enabled: true
-      size: 1Gi
+
+env:
+  DB_HOSTNAME: "immich-postgresql.immich.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_USERNAME: "immich"
+  DB_DATABASE_NAME: "immich"
+
+envFrom:
+  - secretRef:
+      name: immich-db-secret
