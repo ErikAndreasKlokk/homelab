@@ -1,0 +1,36 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: immich-postgres
+  namespace: immich
+spec:
+  instances: 1
+  
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.6
+  
+  bootstrap:
+    initdb:
+      database: immich
+      owner: immich
+      secret:
+        name: immich-postgresql-secret
+  
+  storage:
+    size: 20Gi
+    storageClass: local-path
+  
+  postgresql:
+    parameters:
+      max_connections: "300"
+      shared_buffers: "256MB"
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"
+  
+  monitoring:
+    enablePodMonitor: false

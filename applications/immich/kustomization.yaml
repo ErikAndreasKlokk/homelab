@@ -8,29 +8,11 @@ resources:
   - http-route.yaml
   - pvc.yaml
   - svc.yaml
-  - immich-db-secret.yaml
-  - postgresql-password.yaml
+  - sealed-secret.yaml
+  - postgresql-sealed-secret.yaml
+  - postgresql-cluster.yaml
 
 helmCharts:
-  - name: postgresql
-    repo: https://charts.bitnami.com/bitnami
-    version: 16.2.4
-    releaseName: immich-postgresql
-    namespace: immich
-    valuesInline:
-      auth:
-        username: immich
-        database: immich
-        existingSecret: immich-postgresql-secret
-        secretKeys:
-          adminPasswordKey: postgres-password
-          userPasswordKey: password
-      primary:
-        persistence:
-          enabled: true
-          size: 20Gi
-          storageClass: local-path
-  
   - name: immich
     repo: https://immich-app.github.io/immich-charts
     version: 0.10.3

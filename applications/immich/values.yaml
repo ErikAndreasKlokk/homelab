@@ -7,11 +7,11 @@ valkey:
   enabled: true
 
 env:
-  DB_HOSTNAME: "immich-postgresql.immich.svc.cluster.local"
+  DB_HOSTNAME: "immich-postgres-rw.immich.svc.cluster.local"
   DB_PORT: "5432"
   DB_USERNAME: "immich"
   DB_DATABASE_NAME: "immich"
 
 envFrom:
   - secretRef:
-      name: immich-db-secret
+      name: immich-postgresql-secret
