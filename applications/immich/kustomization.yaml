@@ -7,7 +7,7 @@ resources:
   - pvc.yaml
   - svc.yaml
   - immich-db-secret.yaml
-  - postgresql/kustomization.yaml
+  - postgresql
 
 helmCharts:
   - name: immich
