@@ -11,7 +11,8 @@ env:
   DB_PORT: "5432"
   DB_USERNAME: "immich"
   DB_DATABASE_NAME: "immich"
-
-envFrom:
-  - secretRef:
-      name: immich-postgresql-secret
+  DB_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: immich-db-secret
+        key: DB_PASSWORD

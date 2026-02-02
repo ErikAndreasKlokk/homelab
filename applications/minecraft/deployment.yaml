@@ -20,7 +20,7 @@ spec:
             - name: EULA
               value: "TRUE"
             - name: MEMORY
-              value: "16G"
+              value: "6G"
             - name: TYPE
               value: "FABRIC"
             - name: VERSION
