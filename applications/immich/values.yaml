@@ -14,5 +14,5 @@ env:
   DB_PASSWORD:
     valueFrom:
       secretKeyRef:
-        name: immich-db-secret
-        key: DB_PASSWORD
+        name: immich-postgresql-secret
+        key: password

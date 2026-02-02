@@ -8,7 +8,6 @@ resources:
   - http-route.yaml
   - pvc.yaml
   - svc.yaml
-  - sealed-secret.yaml
   - postgresql-sealed-secret.yaml
   - postgresql-cluster.yaml
 
