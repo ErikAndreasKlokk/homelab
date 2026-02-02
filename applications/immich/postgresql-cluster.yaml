@@ -5,9 +5,14 @@ metadata:
   namespace: immich
 spec:
   instances: 1
-  
   imageName: ghcr.io/cloudnative-pg/postgresql:16.6
-  
+
+  managed:
+    roles:
+      - name: immich
+        superuser: true
+        login: true
+
   bootstrap:
     initdb:
       database: immich
