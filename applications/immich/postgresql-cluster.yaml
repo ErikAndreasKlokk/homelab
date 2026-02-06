@@ -1,11 +1,16 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: immich-postgres
-  namespace: immich
+  name: immich-postgresql
 spec:
+  imageName: ghcr.io/tensorchord/cloudnative-pgvecto.rs:16.5-v0.3.0@sha256:be3f025d79aa1b747817f478e07e71be43236e14d00d8a9eb3914146245035ba
   instances: 1
-  imageName: ghcr.io/cloudnative-pg/postgresql:16.6
+
+  postgresql:
+    parameters:
+      timezone: Europe/Oslo
+    shared_preload_libraries:
+      - "vectors.so"
 
   managed:
     roles:
@@ -15,32 +20,22 @@ spec:
 
   bootstrap:
     initdb:
-      postInitApplicationSQL:
-        - CREATE EXTENSION vchord CASCADE;
-        - CREATE EXTENSION earthdistance CASCADE;
       database: immich
       owner: immich
       secret:
         name: immich-postgresql-secret
-  
+      postInitSQL:
+        - CREATE EXTENSION IF NOT EXISTS "vectors";
+        - CREATE EXTENSION IF NOT EXISTS "cube" CASCADE;
+        - CREATE EXTENSION IF NOT EXISTS "earthdistance" CASCADE;
+
   storage:
-    size: 20Gi
-    storageClass: local-path
-  
-  postgresql:
-    shared_preload_libraries:
-      - "vchord.so"
-    parameters:
-      max_connections: "300"
-      shared_buffers: "256MB"
-  
-  resources:
-    requests:
-      memory: "512Mi"
-      cpu: "500m"
-    limits:
-      memory: "2Gi"
-      cpu: "2000m"
+    size: 5G
+    pvcTemplate:
+      storageClassName: longhorn-static
+      volumeName: immich-postgresql
+      accessModes:
+        - ReadWriteOnce
   
   monitoring:
     enablePodMonitor: false
