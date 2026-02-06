@@ -8,6 +8,7 @@ resources:
   - pvc.yaml
   - postgresql-sealed-secret.yaml
   - postgresql-cluster.yaml
+  - http-route.yaml
 
 helmCharts:
   - name: immich
