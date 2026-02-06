@@ -31,11 +31,7 @@ spec:
 
   storage:
     size: 5G
-    pvcTemplate:
-      storageClassName: local-path
-      volumeName: immich-postgresql
-      accessModes:
-        - ReadWriteOnce
+    storageClass: local-path
   
   monitoring:
     enablePodMonitor: false
