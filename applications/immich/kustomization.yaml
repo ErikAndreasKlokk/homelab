@@ -5,9 +5,7 @@ namespace: immich
 
 resources:
   - ns.yaml
-  - http-route.yaml
   - pvc.yaml
-  - svc.yaml
   - postgresql-sealed-secret.yaml
   - postgresql-cluster.yaml
 
