@@ -32,7 +32,7 @@ server:
     main:
       enabled: true
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt
+        cert-manager.io/cluster-issuer: cloudflare-cluster-issuer
       hosts:
         - host: immich.erikak.no
           paths:
