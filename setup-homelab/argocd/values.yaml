@@ -2,6 +2,10 @@ configs:
   cm:
     create: true
     application.resourceTrackingMethod: "annotation+label"
+    resource.customizations.ignoreDifferences.batch_Job: |
+      jqPathExpressions:
+        - .spec.podReplacementPolicy
+        - .status.terminating
   cmp:
     create: true
     plugins:
