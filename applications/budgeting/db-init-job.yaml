@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: budgeting-db-migrate
+  namespace: budgeting
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 120
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ghcr.io/erikandreasklokk/budgeting-migrate:latest
+          env:
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: budgeting-postgresql-secret
+                  key: postgresql-password
+            - name: DATABASE_URL
+              value: "postgresql://budgeting:$(POSTGRESQL_PASSWORD)@budgeting-postgresql-rw:5432/budgeting"
