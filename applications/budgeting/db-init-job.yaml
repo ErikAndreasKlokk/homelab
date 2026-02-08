@@ -12,6 +12,7 @@ spec:
       containers:
         - name: migrate
           image: ghcr.io/erikandreasklokk/budgeting-migrate:main
+          pullPolicy: Always
           env:
             - name: POSTGRESQL_PASSWORD
               valueFrom:
