@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: budgeting
+  namespace: budgeting
+  labels:
+    app: budgeting
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: budgeting
+  template:
+    metadata:
+      namespace: budgeting
+      labels:
+        app: budgeting
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: budgeting
+          image: ghcr.io/erikandreasklokk/budgeting:main
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ "ALL" ]
+          env:
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: budgeting-postgresql-secret
+                  key: postgresql-password
+            - name: DATABASE_URL
+              value: "postgresql://budgeting:$(POSTGRESQL_PASSWORD)@budgeting-postgresql-rw:5432/budgeting"
+          ports:
+            - name: web
+              containerPort: 8080

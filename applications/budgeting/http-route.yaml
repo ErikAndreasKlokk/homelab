@@ -1,0 +1,19 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: budgeting
+  namespace: budgeting
+spec:
+  parentRefs:
+    - name: external
+      namespace: gateway
+  hostnames:
+    - "budgeting.erikak.no"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: budgeting
+          port: 8080
