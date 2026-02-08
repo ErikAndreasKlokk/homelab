@@ -6,7 +6,7 @@ metadata:
   labels:
     app: budgeting
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: budgeting
@@ -44,3 +44,21 @@ spec:
           ports:
             - name: web
               containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
