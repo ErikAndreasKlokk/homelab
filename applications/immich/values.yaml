@@ -1,0 +1,28 @@
+controllers:
+  main:
+    containers:
+      main:
+        env:
+          DB_HOSTNAME: 'immich-postgresql-rw'
+          DB_USERNAME: 
+            valueFrom:
+              secretKeyRef:
+                key: username
+                name: immich-postgresql-secret
+          DB_PASSWORD: 
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: immich-postgresql-secret
+
+envFrom:
+  - secretRef:
+      name: immich-postgresql-secret
+
+immich:
+  persistence:
+    library:
+      existingClaim: immich-data
+
+valkey:
+  enabled: true
