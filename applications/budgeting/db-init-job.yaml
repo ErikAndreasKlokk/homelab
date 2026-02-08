@@ -11,7 +11,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: migrate
-          image: ghcr.io/erikandreasklokk/budgeting-migrate:latest
+          image: ghcr.io/erikandreasklokk/budgeting-migrate:main
           env:
             - name: POSTGRESQL_PASSWORD
               valueFrom:
