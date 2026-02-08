@@ -9,6 +9,6 @@ spec:
     app: budgeting
   ports:
     - name: web
-      port: 8080
-      targetPort: 8080
+      port: 3000
+      targetPort: 3000
       protocol: TCP
