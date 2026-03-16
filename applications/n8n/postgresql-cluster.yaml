@@ -1,0 +1,32 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: n8n-postgresql
+  namespace: n8n
+spec:
+  imageName: ghcr.io/tensorchord/cloudnative-pgvecto.rs:16.5-v0.3.0@sha256:be3f025d79aa1b747817f478e07e71be43236e14d00d8a9eb3914146245035ba
+  instances: 1
+
+  postgresql:
+    parameters:
+      timezone: Europe/Oslo
+
+  managed:
+    roles:
+      - name: n8n
+        superuser: true
+        login: true
+
+  bootstrap:
+    initdb:
+      database: n8n
+      owner: n8n
+      secret:
+        name: n8n-postgresql-secret
+
+  storage:
+    size: 10G
+    storageClass: local-path
+
+  monitoring:
+    enablePodMonitor: false
