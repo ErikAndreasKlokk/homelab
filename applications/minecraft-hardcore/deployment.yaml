@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: minecraft
-          image: ghcr.io/itzg/minecraft-server:java21
+          image: ghcr.io/itzg/minecraft-server:java25
           env:
             - name: EULA
               value: "TRUE"
