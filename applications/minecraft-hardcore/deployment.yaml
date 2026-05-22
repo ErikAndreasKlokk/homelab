@@ -34,9 +34,7 @@ spec:
             - name: SERVER_IP
               value: "0.0.0.0"
             - name: MOTD
-              value: "Hardcore - one life only"
-            - name: HARDCORE
-              value: "true"
+              value: "Hard difficulty server"
             - name: DIFFICULTY
               value: "hard"
             - name: OVERRIDE_SERVER_PROPERTIES
