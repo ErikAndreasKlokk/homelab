@@ -59,8 +59,17 @@ grafana:
     storageClassName: local-path
     size: 5Gi
 
-  # Loki datasource is in grafana-loki-datasource.yaml (separate ConfigMap)
-  # so the sidecar picks it up after Grafana is ready rather than at cold start.
+  # Mount Loki datasource ConfigMap directly to bypass the sidecar race condition.
+  # The sidecar writes files AFTER Grafana starts, so Grafana misses them at boot.
+  extraVolumes:
+    - name: loki-datasource-cfg
+      configMap:
+        name: grafana-loki-datasource
+  extraVolumeMounts:
+    - name: loki-datasource-cfg
+      mountPath: /etc/grafana/provisioning/datasources/loki-datasource.yaml
+      subPath: loki-datasource.yaml
+      readOnly: true
 
   # Auto-load dashboards from ConfigMaps labelled grafana_dashboard=1
   sidecar:
