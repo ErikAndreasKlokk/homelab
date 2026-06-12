@@ -1,0 +1,70 @@
+alloy:
+  configMap:
+    content: |
+      // Discover all pods in the cluster via the Kubernetes API.
+      // Uses the K8s log streaming API — no hostPath mount required (Talos-compatible).
+      discovery.kubernetes "pods" {
+        role = "pod"
+      }
+
+      // Enrich log targets with useful labels from pod metadata.
+      discovery.relabel "pod_logs" {
+        targets = discovery.kubernetes.pods.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_app"]
+          target_label  = "app"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_node_name"]
+          target_label  = "node"
+        }
+        // Drop Succeeded/Completed pods — their logs are already gone.
+        rule {
+          source_labels = ["__meta_kubernetes_pod_phase"]
+          regex         = "Succeeded|Failed"
+          action        = "drop"
+        }
+      }
+
+      // Stream pod logs via the Kubernetes API and forward to Loki.
+      loki.source.kubernetes "pod_logs" {
+        targets    = discovery.relabel.pod_logs.output
+        forward_to = [loki.write.default.receiver]
+      }
+
+      // Also collect Kubernetes events as structured log entries.
+      loki.source.kubernetes_events "cluster_events" {
+        namespaces  = []
+        forward_to  = [loki.write.default.receiver]
+        log_format  = "json"
+      }
+
+      // Write logs to Loki via the gateway.
+      loki.write "default" {
+        endpoint {
+          url = "http://loki-gateway.loki.svc.cluster.local/loki/api/v1/push"
+        }
+      }
+
+# Run as a single Deployment — loki.source.kubernetes uses the K8s API,
+# not the node filesystem, so a DaemonSet is not required.
+controller:
+  type: deployment
+  replicas: 1
+
+# Chart creates a ClusterRole for pod discovery and log streaming.
+rbac:
+  create: true

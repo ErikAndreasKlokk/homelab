@@ -1,0 +1,107 @@
+crds:
+  enabled: true
+
+# ---------- Prometheus ----------
+prometheus:
+  prometheusSpec:
+    retention: 30d
+    retentionSize: "40GiB"
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 45Gi
+
+    # Scrape ALL PodMonitors and ServiceMonitors in the cluster,
+    # not just those created by this Helm release.
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+
+    # Needed on Talos — kubeScheduler, kubeControllerManager, etcd
+    # run on the control plane node with non-standard ports/auth.
+    # Disable scraping them to avoid constant scrape errors.
+
+  serviceMonitor:
+    selfMonitor: true
+
+# Disable control-plane component scraping (Talos: not accessible)
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+# ---------- Grafana ----------
+grafana:
+  admin:
+    existingSecret: grafana-admin-secret
+    userKey: admin-user
+    passwordKey: admin-password
+
+  persistence:
+    enabled: true
+    storageClassName: local-path
+    size: 5Gi
+
+  # Pre-configure Loki as a datasource
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki-gateway.loki.svc.cluster.local
+      access: proxy
+      isDefault: false
+      jsonData:
+        maxLines: 1000
+
+  # Auto-load dashboards from ConfigMaps labelled grafana_dashboard=1
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: ALL
+
+  grafana.ini:
+    server:
+      root_url: "https://grafana.erikak.no"
+
+# ---------- AlertManager ----------
+alertmanager:
+  alertmanagerSpec:
+    # Full config comes from the SealedSecret (includes Discord webhook URL).
+    # Seal alertmanager-discord-sealed-secret.yaml before ArgoCD syncs this app.
+    alertmanagerConfigSecret: alertmanager-discord-secret
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 2Gi
+
+# ---------- Prometheus Operator ----------
+# Disable the admission webhook to avoid ArgoCD out-of-sync on caBundle fields.
+# Invalid PrometheusRule resources will fail silently rather than be rejected at admission.
+prometheusOperator:
+  admissionWebhooks:
+    enabled: false
+    patch:
+      enabled: false
+  tls:
+    enabled: false
+
+# ---------- node-exporter ----------
+prometheus-node-exporter:
+  tolerations:
+    - effect: NoSchedule
+      operator: Exists
+  extraArgs:
+    - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+    - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
