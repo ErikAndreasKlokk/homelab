@@ -59,15 +59,8 @@ grafana:
     storageClassName: local-path
     size: 5Gi
 
-  # Pre-configure Loki as a datasource
-  additionalDataSources:
-    - name: Loki
-      type: loki
-      url: http://loki-gateway.loki.svc.cluster.local
-      access: proxy
-      isDefault: false
-      jsonData:
-        maxLines: 1000
+  # Loki datasource is in grafana-loki-datasource.yaml (separate ConfigMap)
+  # so the sidecar picks it up after Grafana is ready rather than at cold start.
 
   # Auto-load dashboards from ConfigMaps labelled grafana_dashboard=1
   sidecar:

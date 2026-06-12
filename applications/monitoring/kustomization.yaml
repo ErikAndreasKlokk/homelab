@@ -6,6 +6,7 @@ resources:
   - http-route.yaml
   - grafana-admin-sealed-secret.yaml
   - alertmanager-discord-sealed-secret.yaml
+  - grafana-loki-datasource.yaml
 
 helmCharts:
   - name: kube-prometheus-stack
