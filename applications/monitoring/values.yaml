@@ -22,15 +22,13 @@ prometheus:
     ruleSelectorNilUsesHelmValues: false
     probeSelectorNilUsesHelmValues: false
 
-    # Talos + local-path: run as root to avoid permission issues.
-    # The seccomp RuntimeDefault on Talos blocks file creation even after chown.
+    # Talos + local-path: run as root so Prometheus can write to the PVC.
+    # baseline PodSecurity allows runAsUser: 0 but forbids Unconfined seccomp.
     securityContext:
       runAsNonRoot: false
       runAsUser: 0
       runAsGroup: 0
       fsGroup: 0
-      seccompProfile:
-        type: Unconfined
 
     # Needed on Talos — kubeScheduler, kubeControllerManager, etcd
     # run on the control plane node with non-standard ports/auth.
