@@ -22,24 +22,15 @@ prometheus:
     ruleSelectorNilUsesHelmValues: false
     probeSelectorNilUsesHelmValues: false
 
-    # Talos + local-path: kubelet fsGroup chown doesn't run reliably.
-    # Use an initContainer to fix ownership before Prometheus starts.
+    # Talos + local-path: run as root to avoid permission issues.
+    # The seccomp RuntimeDefault on Talos blocks file creation even after chown.
     securityContext:
-      runAsNonRoot: true
-      runAsUser: 1000
-      runAsGroup: 2000
-      fsGroup: 2000
-
-    initContainers:
-      - name: fix-permissions
-        image: busybox:1.36
-        command: ['sh', '-c', 'chown -R 1000:2000 /prometheus && chmod -R g+w /prometheus']
-        securityContext:
-          runAsUser: 0
-          runAsNonRoot: false
-        volumeMounts:
-          - name: prometheus-kube-prometheus-stack-prometheus-db
-            mountPath: /prometheus
+      runAsNonRoot: false
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 0
+      seccompProfile:
+        type: Unconfined
 
     # Needed on Talos — kubeScheduler, kubeControllerManager, etcd
     # run on the control plane node with non-standard ports/auth.
