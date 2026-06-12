@@ -22,14 +22,24 @@ prometheus:
     ruleSelectorNilUsesHelmValues: false
     probeSelectorNilUsesHelmValues: false
 
-    # local-path volumes are created root-owned; fsGroupChangePolicy: Always
-    # forces kubelet to recursively chown the mount to fsGroup 2000 on every start.
+    # Talos + local-path: kubelet fsGroup chown doesn't run reliably.
+    # Use an initContainer to fix ownership before Prometheus starts.
     securityContext:
       runAsNonRoot: true
       runAsUser: 1000
       runAsGroup: 2000
       fsGroup: 2000
-      fsGroupChangePolicy: Always
+
+    initContainers:
+      - name: fix-permissions
+        image: busybox:1.36
+        command: ['sh', '-c', 'chown -R 1000:2000 /prometheus && chmod -R g+w /prometheus']
+        securityContext:
+          runAsUser: 0
+          runAsNonRoot: false
+        volumeMounts:
+          - name: prometheus-kube-prometheus-stack-prometheus-db
+            mountPath: /prometheus
 
     # Needed on Talos — kubeScheduler, kubeControllerManager, etcd
     # run on the control plane node with non-standard ports/auth.
