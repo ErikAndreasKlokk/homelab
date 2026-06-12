@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bolig
+  namespace: bolig
+  labels:
+    app: bolig
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bolig
+  template:
+    metadata:
+      namespace: bolig
+      labels:
+        app: bolig
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bolig
+          image: ghcr.io/erikandreasklokk/bolig:main
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ "ALL" ]
+          env:
+            - name: TZ
+              value: Europe/Oslo
+            - name: ORIGIN
+              value: https://bolig.erikak.no
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bolig-postgresql-secret
+                  key: postgresql-password
+            - name: DATABASE_URL
+              value: "postgresql://bolig:$(POSTGRESQL_PASSWORD)@bolig-postgresql-rw:5432/bolig"
+            - name: DISCORD_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: bolig-discord-secret
+                  key: webhook-url
+          ports:
+            - name: web
+              containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
