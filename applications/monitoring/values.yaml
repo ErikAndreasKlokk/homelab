@@ -22,6 +22,14 @@ prometheus:
     ruleSelectorNilUsesHelmValues: false
     probeSelectorNilUsesHelmValues: false
 
+    # local-path volumes are created with root ownership; fsGroup 2000
+    # lets the prometheus process (non-root) write to the data directory.
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 2000
+      fsGroup: 2000
+
     # Needed on Talos — kubeScheduler, kubeControllerManager, etcd
     # run on the control plane node with non-standard ports/auth.
     # Disable scraping them to avoid constant scrape errors.
