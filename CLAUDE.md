@@ -87,6 +87,16 @@ If the ArgoCD UI throws errors after initial setup, restart the application cont
 kubectl -n argocd rollout restart statefulset argocd-application-controller
 ```
 
+**Expected ArgoCD drift (not a real problem):** Several resource kinds report `OutOfSync` / `Degraded` permanently because their controllers mutate the live object or have no ArgoCD health check — this rolls up to a misleading app-level `OutOfSync`/`Degraded`. Known cases:
+- `Cluster` (CloudNative-PG) and `HTTPRoute` (Gateway API) — perpetually `OutOfSync` (controller adds status/default fields; no `ignoreDifferences` configured).
+- `SealedSecret` — shows `Degraded` health (known ArgoCD health-check quirk for the CRD).
+
+When verifying a deploy, check the **per-resource** health of `Deployment` and any `Job` — not the rolled-up app status:
+```bash
+kubectl get application <app> -n argocd -o json | jq -r '.status.resources[] | "\(.kind)/\(.name): \(.status) \(.health.status)"'
+```
+Don't try to "fix" the CNPG/HTTPRoute/SealedSecret drift unless that's the actual task.
+
 ## Talos Cluster Setup (reference)
 
 Talos image is built at [factory.talos.dev](https://factory.talos.dev/) — the current image includes the `cloudflared` and `qemu-guest-agent` extensions. VM sizing used: 4 CPU / 4GB RAM / 100GB disk for the controlplane node (`ctrl-01`); worker node (`work-01`) sized as desired.
