@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Cluster access — ALWAYS use the `new-homelab-project` skill
+
+For **any** operation against the live homelab cluster — checking deployment /
+rollout status, viewing pod logs, triggering a rollout, sealing secrets, or
+running `kubectl` / `kubeseal` / `gh` — invoke the **`new-homelab-project`**
+skill. It provides the kubeconfig/credentials and the exact workflow.
+
+Do **not** conclude "I have no cluster access" or hand the commands back to the
+user: the default `kubectl` context on this machine points at a dead Docker
+Desktop cluster and `gh` is unauthenticated, but the skill gives you everything
+you need. This has come up before — use the skill instead of giving up.
+
+Note on rollouts: custom images use the reused `:main` tag, so ArgoCD sees no
+manifest diff and will **not** auto-restart the pod after a new image is pushed.
+After CI builds the image, trigger `kubectl rollout restart deployment/<app> -n
+<ns>` (via the skill) to pull the new image.
+
 ## What This Is
 
 A GitOps homelab running on Proxmox + Talos Linux with ArgoCD for continuous deployment. All resources are declared in YAML and automatically synced by ArgoCD — there is no manual `kubectl apply` workflow for day-to-day changes.
