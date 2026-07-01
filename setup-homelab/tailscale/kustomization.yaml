@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ns.yaml
+  - operator-oauth-sealed-secret.yaml
+
+helmCharts:
+  - name: tailscale-operator
+    repo: https://pkgs.tailscale.com/helmcharts
+    version: 1.98.4
+    releaseName: tailscale-operator
+    namespace: tailscale
+    valuesFile: values.yaml

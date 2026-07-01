@@ -1,0 +1,12 @@
+# The operator authenticates to Tailscale using the OAuth client stored in the
+# pre-created `operator-oauth` Secret (see operator-oauth-sealed-secret.yaml),
+# so oauth values are left empty here rather than committing plaintext creds.
+oauth: {}
+
+operatorConfig:
+  hostname: tailscale-operator
+
+# Not exposing the Kubernetes API server over the tailnet (kubectl runs
+# in-cluster via a ServiceAccount instead).
+apiServerProxyConfig:
+  mode: "false"

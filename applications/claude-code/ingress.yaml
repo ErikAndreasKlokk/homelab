@@ -1,0 +1,20 @@
+# Exposes code-server privately on the tailnet via the Tailscale operator.
+# Reachable from the phone (with Tailscale on) at:
+#   https://claude-code.<your-tailnet>.ts.net
+# No public exposure and no port on the Cilium/Cloudflare gateway.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: claude-code
+  namespace: claude-code
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: claude-code
+      port:
+        number: 8080
+  tls:
+    # First host becomes the MagicDNS name (operator serves HTTPS for it).
+    - hosts:
+        - claude-code

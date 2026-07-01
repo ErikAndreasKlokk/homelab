@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: claude-code
+  namespace: claude-code
+  labels:
+    app: claude-code
+spec:
+  replicas: 1
+  # RWO local-path volume: never let a second pod mount it during a rollout.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: claude-code
+  template:
+    metadata:
+      namespace: claude-code
+      labels:
+        app: claude-code
+    spec:
+      serviceAccountName: claude-code
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      # Clone claude-workspace into the PVC on first boot, then pull the project
+      # repos. On later boots it fast-forwards; uncommitted work is preserved.
+      initContainers:
+        - name: bootstrap
+          image: ghcr.io/erikandreasklokk/claude-workspace:main
+          imagePullPolicy: Always
+          command:
+            - bash
+            - -lc
+            - |
+              set -e
+              WS=/home/coder/workspace
+              if [ ! -d "$WS/.git" ]; then
+                echo "First boot — cloning claude-workspace..."
+                git clone https://github.com/ErikAndreasKlokk/claude-workspace.git "$WS"
+              fi
+              cd "$WS"
+              git pull --ff-only || echo "claude-workspace has local changes; skipping ff"
+              bash bootstrap.sh
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: home
+              mountPath: /home/coder
+      containers:
+        - name: code-server
+          image: ghcr.io/erikandreasklokk/claude-workspace:main
+          imagePullPolicy: Always
+          # NOTE: root filesystem is intentionally writable (no
+          # readOnlyRootFilesystem) — this is an interactive dev environment that
+          # runs npm installs, builds, and Claude Code, matching the n8n pattern.
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          args:
+            - --bind-addr
+            - 0.0.0.0:8080
+            - /home/coder/workspace
+          env:
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: claude-code-secret
+                  key: code-server-password
+          ports:
+            - name: web
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          volumeMounts:
+            - name: home
+              mountPath: /home/coder
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: home
+          persistentVolumeClaim:
+            claimName: claude-code-data
+        - name: tmp
+          emptyDir: {}
