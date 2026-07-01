@@ -5,6 +5,7 @@ resources:
   - ns.yaml
   - serviceaccount.yaml
   - code-server-sealed-secret.yaml
+  - git-sealed-secret.yaml
   - pvc.yaml
   - deployment.yaml
   - svc.yaml

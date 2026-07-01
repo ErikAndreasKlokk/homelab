@@ -34,6 +34,14 @@ spec:
         - name: bootstrap
           image: ghcr.io/erikandreasklokk/claude-workspace:main
           imagePullPolicy: Always
+          env:
+            # Optional: enables private-repo clone + push. Pod still starts without it.
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: claude-code-git
+                  key: github-token
+                  optional: true
           command:
             - bash
             - -lc
