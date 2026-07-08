@@ -110,6 +110,41 @@ spec:
               mountPath: /home/coder
             - name: tmp
               mountPath: /tmp
+        # Keeps a Remote Control session alive so the pod is reachable from the
+        # Claude mobile app / claude.ai/code, surviving pod restarts. Reuses the
+        # full-scope OAuth login persisted on the shared /home/coder PVC — that
+        # login is a one-time manual step: exec into the code-server container,
+        # run `claude` -> `/login`. If the login is missing this container just
+        # crash-loops harmlessly until it exists.
+        - name: remote-control
+          image: ghcr.io/erikandreasklokk/claude-workspace:main
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: HOME
+              value: /home/coder
+          command: ["bash", "-lc"]
+          # `printf y` answers the one-time "Enable Remote Control?" consent;
+          # `sleep infinity` holds stdin open so the session never EOFs and exits.
+          # If claude does exit (e.g. >10 min network loss), the container's PID 1
+          # exits and the kubelet restarts it — self-healing reconnect.
+          args:
+            - |
+              cd /home/coder/workspace 2>/dev/null || cd /home/coder
+              exec claude remote-control --name homelab < <(printf 'y\n'; sleep infinity)
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          volumeMounts:
+            - name: home
+              mountPath: /home/coder
       volumes:
         - name: home
           persistentVolumeClaim:
