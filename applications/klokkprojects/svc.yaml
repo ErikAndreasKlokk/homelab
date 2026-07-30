@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: klokkprojects
+  namespace: klokkprojects
+spec:
+  type: ClusterIP
+  selector:
+    app: klokkprojects
+  ports:
+    - name: web
+      port: 3000
+      targetPort: 3000
+      protocol: TCP

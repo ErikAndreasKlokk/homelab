@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: klokkprojects
+  namespace: klokkprojects
+  labels:
+    app: klokkprojects
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: klokkprojects
+  template:
+    metadata:
+      namespace: klokkprojects
+      labels:
+        app: klokkprojects
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: klokkprojects
+          image: ghcr.io/erikandreasklokk/klokkprojects:main
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ "ALL" ]
+          ports:
+            - name: web
+              containerPort: 3000
+          # Sanity/Algolia env intentionally absent for now — the site serves
+          # built-in demo content without them. Add a SealedSecret with
+          # PUBLIC_SANITY_PROJECT_ID / PUBLIC_SANITY_DATASET / SANITY_API_TOKEN /
+          # ALGOLIA_APP_ID / ALGOLIA_SEARCH_KEY when CMS content goes live.
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
