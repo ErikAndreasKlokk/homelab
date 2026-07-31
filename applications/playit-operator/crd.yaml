@@ -1,0 +1,118 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: playittunnels.playit-operator.io
+spec:
+  group: playit-operator.io
+  names:
+    categories: []
+    kind: PlayitTunnel
+    plural: playittunnels
+    shortNames:
+    - ptun
+    singular: playittunnel
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.protocol
+      name: Protocol
+      type: string
+    - jsonPath: .spec.serviceName
+      name: Service
+      type: string
+    - jsonPath: .status.address
+      name: Address
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Auto-generated derived type for PlayitTunnelSpec via `CustomResource`
+        properties:
+          spec:
+            description: |-
+              `PlayitTunnel` declares a playit.gg tunnel that forwards public traffic to a Kubernetes `Service`. The operator reconciles it against the playit.gg API and writes the assigned public address back into [`PlayitTunnelStatus`].
+
+              playit is a layer-4 (TCP/UDP) port allocator, so each `PlayitTunnel` maps one public address to one `Service` port — unlike an HTTP ingress there is no host-header routing.
+            properties:
+              customDomain:
+                description: |-
+                  Custom domain to attach to this tunnel (requires playit Premium).
+
+                  Reserved but **not yet implemented** — declared now so that turning on custom-domain support later is a non-breaking change. See the README roadmap.
+                nullable: true
+                type: string
+              port:
+                description: Port on the target `Service` to forward traffic to.
+                format: uint16
+                minimum: 0.0
+                type: integer
+              portCount:
+                default: 1
+                description: Number of consecutive ports to allocate, for services that need a port range. Defaults to 1.
+                format: uint16
+                minimum: 0.0
+                type: integer
+              protocol:
+                default: tcp
+                description: Protocol to expose over the tunnel. Defaults to `tcp`.
+                enum:
+                - tcp
+                - udp
+                - both
+                type: string
+              region:
+                description: Optional region / endpoint preference (a playit region id). When unset, playit.gg picks the allocation.
+                nullable: true
+                type: string
+              serviceName:
+                description: Name of the target `Service`, in the same namespace as this resource.
+                type: string
+              tunnelType:
+                description: playit tunnel type — set to `https` for a TLS-terminating web tunnel (serves the target over HTTPS on a custom domain), or another playit tunnel type (e.g. `minecraft-java`). When set, this overrides `protocol` and `portCount`. Leave unset for a plain TCP/UDP port tunnel.
+                nullable: true
+                type: string
+            required:
+            - port
+            - serviceName
+            type: object
+          status:
+            description: Observed state of a [`PlayitTunnel`], written to `.status` by the operator.
+            nullable: true
+            properties:
+              address:
+                description: Public address (`host:port`) assigned to the tunnel.
+                nullable: true
+                type: string
+              customDomainReady:
+                description: Whether the requested custom domain has been attached and is serving.
+                nullable: true
+                type: boolean
+              message:
+                description: Human-readable detail about the current phase (progress or error text).
+                nullable: true
+                type: string
+              observedGeneration:
+                description: '`.metadata.generation` last successfully reconciled.'
+                format: int64
+                nullable: true
+                type: integer
+              phase:
+                description: 'High-level lifecycle phase: `Pending`, `Ready`, or `Error`.'
+                nullable: true
+                type: string
+              tunnelId:
+                description: Opaque tunnel id returned by playit.gg.
+                nullable: true
+                type: string
+            type: object
+        required:
+        - spec
+        title: PlayitTunnel
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
