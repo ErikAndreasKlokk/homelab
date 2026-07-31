@@ -1,0 +1,88 @@
+# playit's .playit.plus HTTPS tunnels do NOT terminate TLS — they forward raw
+# TCP to the agent, so TLS must be terminated locally. This Caddy instance does
+# that: it auto-obtains a Let's Encrypt cert for homelab.playit.plus (validated
+# through the tunnel) and reverse-proxies to Immich. The playit HTTPS tunnel
+# (created in the dashboard, on the self-managed agent) is configured to forward
+# to this Service's ClusterIP: http_port=8080, https_port=8443. The ClusterIP is
+# pinned so that tunnel config stays valid across restarts.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: caddy-immich-tls
+  namespace: immich
+data:
+  Caddyfile: |
+    {
+        http_port 8080
+        https_port 8443
+    }
+    homelab.playit.plus {
+        reverse_proxy immich-server.immich.svc.cluster.local:2283
+    }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: caddy-immich-tls-data
+  namespace: immich
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caddy-immich-tls
+  namespace: immich
+  labels:
+    app: caddy-immich-tls
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: caddy-immich-tls
+  template:
+    metadata:
+      labels:
+        app: caddy-immich-tls
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: caddy
+          image: caddy:2-alpine
+          ports:
+            - { name: http, containerPort: 8080 }
+            - { name: https, containerPort: 8443 }
+          volumeMounts:
+            - { name: config, mountPath: /etc/caddy }
+            - { name: certdata, mountPath: /data }
+            - { name: caddyconfig, mountPath: /config }
+      volumes:
+        - name: config
+          configMap:
+            name: caddy-immich-tls
+        - name: certdata
+          persistentVolumeClaim:
+            claimName: caddy-immich-tls-data
+        - name: caddyconfig
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: caddy-immich-tls
+  namespace: immich
+spec:
+  type: ClusterIP
+  clusterIP: 10.107.133.79
+  selector:
+    app: caddy-immich-tls
+  ports:
+    - { name: http, port: 8080, targetPort: 8080 }
+    - { name: https, port: 8443, targetPort: 8443 }

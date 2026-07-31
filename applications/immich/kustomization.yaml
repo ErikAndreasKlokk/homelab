@@ -9,6 +9,7 @@ resources:
   - postgresql-sealed-secret.yaml
   - postgresql-cluster.yaml
   - http-route.yaml
+  - caddy-tls.yaml
 
 helmCharts:
   - name: immich
