@@ -16,14 +16,23 @@ data:
       echo "set-port: no port supplied"
       exit 0
     fi
-    if wget -q -O- \
-        --post-data="json={\"listen_port\":${PORT}}" \
-        http://127.0.0.1:8080/api/v2/app/setPreferences >/dev/null 2>&1; then
-      echo "set-port: qBittorrent listen_port -> ${PORT}"
-    else
-      echo "set-port: FAILED to set listen_port -> ${PORT}"
-      exit 1
-    fi
+    # qBittorrent starts after gluetun is healthy, so on the first allocation
+    # its WebUI may not be listening yet. Retry rather than lose the port until
+    # the next NAT-PMP renewal.
+    i=1
+    while [ "$i" -le 12 ]; do
+      if wget -q -O- \
+          --post-data="json={\"listen_port\":${PORT}}" \
+          http://127.0.0.1:8080/api/v2/app/setPreferences >/dev/null 2>&1; then
+        echo "set-port: qBittorrent listen_port -> ${PORT}"
+        exit 0
+      fi
+      echo "set-port: qBittorrent not ready (attempt ${i}), retrying..."
+      i=$((i + 1))
+      sleep 5
+    done
+    echo "set-port: FAILED to set listen_port -> ${PORT}"
+    exit 1
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -58,8 +67,14 @@ spec:
           # gluetun's local DNS-over-TLS proxy. Using cluster DNS here instead
           # would leak every tracker lookup to the ISP resolver outside the tunnel.
           - 127.0.0.1
-      containers:
+      # gluetun runs as a native sidecar (init container with restartPolicy:
+      # Always). Its startupProbe gates the main container, so qBittorrent is
+      # not started until the tunnel is actually up and tun0 exists — qBittorrent
+      # binds its listening sockets once at startup, and if it starts first it
+      # binds eth0 and announces from an address gluetun's firewall drops.
+      initContainers:
         - name: gluetun
+          restartPolicy: Always
           image: qmcgaw/gluetun:v3.40.0
           imagePullPolicy: IfNotPresent
           securityContext:
@@ -108,13 +123,19 @@ spec:
           ports:
             - name: control
               containerPort: 8000
+          startupProbe:
+            # Blocks qBittorrent from starting until the tunnel carries traffic.
+            # Up to 5 minutes, since a slow VPN handshake is not a failure.
+            exec:
+              command: ["/gluetun-entrypoint", "healthcheck"]
+            periodSeconds: 5
+            failureThreshold: 60
           readinessProbe:
             # gluetun's own healthcheck: it verifies the tunnel actually carries
             # traffic, not merely that a socket is bound. Run as exec so the
             # control port does not have to be opened to the network.
             exec:
               command: ["/gluetun-entrypoint", "healthcheck"]
-            initialDelaySeconds: 20
             periodSeconds: 15
             failureThreshold: 3
           volumeMounts:
@@ -126,6 +147,7 @@ spec:
               mountPath: /tmp/gluetun
             - name: port-forward-script
               mountPath: /scripts
+      containers:
         - name: qbittorrent
           image: lscr.io/linuxserver/qbittorrent:latest
           imagePullPolicy: Always
