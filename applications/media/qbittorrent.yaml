@@ -1,3 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gluetun-port-forward
+  namespace: media
+data:
+  # Proton's NAT-PMP lease is 60s and the assigned port changes on every
+  # reconnect, so qBittorrent's listen port has to be updated at runtime — a
+  # hardcoded port would never be the forwarded one. gluetun runs this on each
+  # port allocation. Both containers share a network namespace, so qBittorrent's
+  # WebUI is reachable on 127.0.0.1.
+  set-port.sh: |
+    #!/bin/sh
+    PORT="$1"
+    if [ -z "$PORT" ]; then
+      echo "set-port: no port supplied"
+      exit 0
+    fi
+    if wget -q -O- \
+        --post-data="json={\"listen_port\":${PORT}}" \
+        http://127.0.0.1:8080/api/v2/app/setPreferences >/dev/null 2>&1; then
+      echo "set-port: qBittorrent listen_port -> ${PORT}"
+    else
+      echo "set-port: FAILED to set listen_port -> ${PORT}"
+      exit 1
+    fi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,6 +34,9 @@ metadata:
     app: qbittorrent
 spec:
   replicas: 1
+  strategy:
+    # RWO PVCs — the old pod must release the volume before the new one binds.
+    type: Recreate
   selector:
     matchLabels:
       app: qbittorrent
@@ -18,7 +48,79 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      # All containers in a pod share one network namespace, so routing gluetun's
+      # tunnel automatically routes qBittorrent. If gluetun dies, its firewall
+      # rules stay in the namespace and qBittorrent loses all connectivity —
+      # that is the kill switch, and it is intentional.
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          # gluetun's local DNS-over-TLS proxy. Using cluster DNS here instead
+          # would leak every tracker lookup to the ISP resolver outside the tunnel.
+          - 127.0.0.1
       containers:
+        - name: gluetun
+          image: qmcgaw/gluetun:v3.40.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN"]
+          env:
+            - name: VPN_SERVICE_PROVIDER
+              value: protonvpn
+            - name: VPN_TYPE
+              value: wireguard
+            - name: WIREGUARD_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gluetun-proton
+                  key: wireguard-private-key
+            - name: WIREGUARD_ADDRESSES
+              valueFrom:
+                secretKeyRef:
+                  name: gluetun-proton
+                  key: wireguard-addresses
+            # Port forwarding only works on Proton's P2P servers, and the
+            # WireGuard config itself must have been generated with NAT-PMP
+            # enabled — gluetun cannot turn that on for you.
+            - name: VPN_PORT_FORWARDING
+              value: "on"
+            - name: PORT_FORWARD_ONLY
+              value: "on"
+            - name: VPN_PORT_FORWARDING_UP_COMMAND
+              value: "/bin/sh /scripts/set-port.sh {{PORTS}}"
+            - name: SERVER_COUNTRIES
+              value: "Netherlands"
+            # Permit the WebUI to be reached from cluster pods (Sonarr/Radarr) and
+            # from the node itself (kubelet health probes). Everything else is
+            # forced through the tunnel.
+            - name: FIREWALL_OUTBOUND_SUBNETS
+              value: "10.244.0.0/16,10.96.0.0/12,192.168.1.0/24"
+            - name: TZ
+              value: Europe/Oslo
+          ports:
+            - name: control
+              containerPort: 8000
+          readinessProbe:
+            # gluetun's control server only binds once the container is up and
+            # configured. A tcpSocket check is used rather than the HTTP status
+            # endpoint because the endpoint path has moved between gluetun
+            # releases, and a wrong path would leave the pod permanently
+            # NotReady. Leak protection does not depend on this probe — it comes
+            # from gluetun's firewall, which drops any traffic outside the tunnel.
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: tun
+              mountPath: /dev/net/tun
+            - name: gluetun-storage
+              mountPath: /gluetun
+            - name: gluetun-tmp
+              mountPath: /tmp/gluetun
+            - name: port-forward-script
+              mountPath: /scripts
         - name: qbittorrent
           image: lscr.io/linuxserver/qbittorrent:latest
           imagePullPolicy: Always
@@ -34,12 +136,6 @@ spec:
           ports:
             - name: web
               containerPort: 8080
-            - name: torrent-tcp
-              containerPort: 6881
-              protocol: TCP
-            - name: torrent-udp
-              containerPort: 6881
-              protocol: UDP
           readinessProbe:
             httpGet:
               path: /
@@ -64,6 +160,18 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: media-data
+        - name: tun
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice
+        - name: gluetun-storage
+          emptyDir: {}
+        - name: gluetun-tmp
+          emptyDir: {}
+        - name: port-forward-script
+          configMap:
+            name: gluetun-port-forward
+            defaultMode: 0755
 ---
 apiVersion: v1
 kind: Service
@@ -75,15 +183,9 @@ spec:
   selector:
     app: qbittorrent
   ports:
+    # The forwarded peer port is assigned by Proton at runtime and lives inside
+    # the tunnel — it is not published through this Service.
     - name: web
       port: 8080
       targetPort: 8080
       protocol: TCP
-    - name: torrent-tcp
-      port: 6881
-      targetPort: 6881
-      protocol: TCP
-    - name: torrent-udp
-      port: 6881
-      targetPort: 6881
-      protocol: UDP

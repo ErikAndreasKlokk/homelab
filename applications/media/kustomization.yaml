@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - ns.yaml
   - pvc.yaml
+  - proton-sealed-secret.yaml
   - qbittorrent.yaml
   - prowlarr.yaml
   - sonarr.yaml
