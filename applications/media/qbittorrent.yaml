@@ -91,27 +91,32 @@ spec:
               value: "/bin/sh /scripts/set-port.sh {{PORTS}}"
             - name: SERVER_COUNTRIES
               value: "Netherlands"
-            # Permit the WebUI to be reached from cluster pods (Sonarr/Radarr) and
-            # from the node itself (kubelet health probes). Everything else is
-            # forced through the tunnel.
+            # Lets the pod reach the cluster and LAN outbound. Note this only
+            # creates OUTPUT rules — on its own it does NOT let anything connect
+            # *in*, because the INPUT chain policy is DROP.
             - name: FIREWALL_OUTBOUND_SUBNETS
               value: "10.244.0.0/16,10.96.0.0/12,192.168.1.0/24"
+            # ...which is what this is for. Without it, new inbound connections
+            # to the WebUI are dropped, so Sonarr/Radarr cannot reach qBittorrent
+            # and the kubelet liveness probe kills the container in a loop.
+            # Only 8080 is opened; gluetun's control server on 8000 stays
+            # reachable on loopback only.
+            - name: FIREWALL_INPUT_PORTS
+              value: "8080"
             - name: TZ
               value: Europe/Oslo
           ports:
             - name: control
               containerPort: 8000
           readinessProbe:
-            # gluetun's control server only binds once the container is up and
-            # configured. A tcpSocket check is used rather than the HTTP status
-            # endpoint because the endpoint path has moved between gluetun
-            # releases, and a wrong path would leave the pod permanently
-            # NotReady. Leak protection does not depend on this probe — it comes
-            # from gluetun's firewall, which drops any traffic outside the tunnel.
-            tcpSocket:
-              port: 8000
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            # gluetun's own healthcheck: it verifies the tunnel actually carries
+            # traffic, not merely that a socket is bound. Run as exec so the
+            # control port does not have to be opened to the network.
+            exec:
+              command: ["/gluetun-entrypoint", "healthcheck"]
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            failureThreshold: 3
           volumeMounts:
             - name: tun
               mountPath: /dev/net/tun
@@ -142,12 +147,17 @@ spec:
               port: 8080
             initialDelaySeconds: 15
             periodSeconds: 10
+            timeoutSeconds: 5
           livenessProbe:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 30
+            # Generous: qBittorrent has to wait for gluetun to bring the tunnel
+            # up before it is useful, and a restart loop here loses the session.
+            initialDelaySeconds: 60
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5
           volumeMounts:
             - name: config
               mountPath: /config
