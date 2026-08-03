@@ -25,6 +25,8 @@ A GitOps homelab running on Proxmox + Talos Linux with ArgoCD for continuous dep
 
 **Hardware**: Ryzen 7 5800X, 32GB DDR4, 2×4TB NVMe, RTX 2080.
 
+**Read [ARCHITECTURE.md](ARCHITECTURE.md) before making non-trivial changes.** It documents the full traffic path (Cloudflare Tunnel → Cilium Gateway → HTTPRoute), the three non-HTTP exposure mechanisms (playitgg, playit-operator, Tailscale), the local-path storage constraints, the CNPG database pattern, the per-app inventory, and the conventions for adding a new app. This file covers workflow rules; that one covers how the system is built.
+
 ## Architecture
 
 ```
