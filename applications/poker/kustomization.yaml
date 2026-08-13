@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ns.yaml
+  - postgresql-sealed-secret.yaml
+  - bootstrap-sealed-secret.yaml
+  - postgresql-cluster.yaml
+  - http-route.yaml
+  - deployment.yaml
+  - svc.yaml
+  - db-init-job.yaml

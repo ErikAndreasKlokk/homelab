@@ -1,0 +1,34 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: poker-postgresql
+  namespace: poker
+spec:
+  imageName: ghcr.io/tensorchord/cloudnative-pgvecto.rs:16.5-v0.3.0@sha256:be3f025d79aa1b747817f478e07e71be43236e14d00d8a9eb3914146245035ba
+  instances: 1
+
+  postgresql:
+    parameters:
+      timezone: Europe/Oslo
+
+  managed:
+    roles:
+      - name: poker
+        superuser: true
+        login: true
+
+  bootstrap:
+    initdb:
+      database: poker
+      owner: poker
+      secret:
+        name: poker-postgresql-secret
+
+  # Hands, hand events and chat are small rows, but the event log grows with
+  # every action of every hand and is never pruned.
+  storage:
+    size: 5G
+    storageClass: local-path
+
+  monitoring:
+    enablePodMonitor: true

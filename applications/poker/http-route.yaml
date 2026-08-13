@@ -1,0 +1,33 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: poker
+  namespace: poker
+spec:
+  parentRefs:
+    - name: external
+      namespace: gateway
+  hostnames:
+    - "poker.erikak.no"
+  rules:
+    # The table runs over a WebSocket at /ws/game/<code>. It needs no rule of its
+    # own — Envoy passes an HTTP/1.1 Upgrade through a normal route — but it does
+    # need a timeout long enough to hold an idle table open. The default backend
+    # timeout would cut the socket mid-session and force a reconnect.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /ws/game
+      timeouts:
+        request: "0s"
+        backendRequest: "0s"
+      backendRefs:
+        - name: poker
+          port: 3000
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: poker
+          port: 3000

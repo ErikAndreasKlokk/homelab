@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: poker-db-migrate
+  namespace: poker
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 120
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ghcr.io/erikandreasklokk/poker-migrate:main
+          imagePullPolicy: Always
+          env:
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: poker-postgresql-secret
+                  key: postgresql-password
+            - name: DATABASE_URL
+              value: "postgresql://poker:$(POSTGRESQL_PASSWORD)@poker-postgresql-rw:5432/poker"

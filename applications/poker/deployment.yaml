@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: poker
+  namespace: poker
+  labels:
+    app: poker
+spec:
+  replicas: 1
+  # Live hand state exists only in memory, so two pods would split the tables.
+  # A rolling update runs both at once, which is the same problem for a moment.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: poker
+  template:
+    metadata:
+      namespace: poker
+      labels:
+        app: poker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: poker
+          image: ghcr.io/erikandreasklokk/poker:main
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ "ALL" ]
+          env:
+            - name: TZ
+              value: Europe/Oslo
+            # Required: SvelteKit rejects form posts behind the gateway without it.
+            - name: ORIGIN
+              value: https://poker.erikak.no
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: poker-postgresql-secret
+                  key: postgresql-password
+            - name: DATABASE_URL
+              value: "postgresql://poker:$(POSTGRESQL_PASSWORD)@poker-postgresql-rw:5432/poker"
+            # Creates the very first account, and only works while there are no
+            # users. Everyone after that needs a row in `invite`.
+            - name: BOOTSTRAP_INVITE_CODE
+              valueFrom:
+                secretKeyRef:
+                  name: poker-bootstrap-secret
+                  key: bootstrap-invite-code
+          ports:
+            - name: web
+              containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
