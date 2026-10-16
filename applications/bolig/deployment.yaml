@@ -50,6 +50,11 @@ spec:
                 secretKeyRef:
                   name: bolig-discord-secret
                   key: webhook-url
+            - name: APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bolig-auth-secret
+                  key: app-password
           ports:
             - name: web
               containerPort: 3000

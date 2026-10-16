@@ -5,6 +5,7 @@ resources:
   - ns.yaml
   - postgresql-sealed-secret.yaml
   - discord-sealed-secret.yaml
+  - auth-sealed-secret.yaml
   - postgresql-cluster.yaml
   - http-route.yaml
   - deployment.yaml
