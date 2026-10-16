@@ -50,6 +50,12 @@ spec:
                 secretKeyRef:
                   name: bolig-discord-secret
                   key: webhook-url
+            # Per-user Discord channels: DISCORD_WEBHOOK_URL_<USER> (Erik uses DISCORD_WEBHOOK_URL)
+            - name: DISCORD_WEBHOOK_URL_RUNAR
+              valueFrom:
+                secretKeyRef:
+                  name: bolig-discord-runar-secret
+                  key: webhook-url
             - name: APP_PASSWORD
               valueFrom:
                 secretKeyRef:
