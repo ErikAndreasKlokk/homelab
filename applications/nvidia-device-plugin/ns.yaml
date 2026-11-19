@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nvidia-device-plugin
+  labels:
+    # The plugin mounts /var/lib/kubelet/device-plugins (hostPath), which the
+    # cluster-wide "baseline" default rejects.
+    pod-security.kubernetes.io/enforce: privileged

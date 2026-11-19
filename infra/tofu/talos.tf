@@ -42,10 +42,52 @@ resource "talos_image_factory_schematic" "base" {
   })
 }
 
+# Worker has the RTX 2080 passed through (proxmox.tf). NVIDIA's open kernel
+# modules support Turing; keep the toolkit on the same driver branch.
+resource "talos_image_factory_schematic" "worker_gpu" {
+  schematic = yamlencode({
+    customization = {
+      systemExtensions = {
+        officialExtensions = [
+          "siderolabs/qemu-guest-agent",
+          "siderolabs/nvidia-open-gpu-kernel-modules-production",
+          "siderolabs/nvidia-container-toolkit-production",
+        ]
+      }
+    }
+  })
+}
+
 locals {
   schematic_ids = {
     controlplane = talos_image_factory_schematic.base.id
-    worker       = talos_image_factory_schematic.base.id
+    worker       = talos_image_factory_schematic.worker_gpu.id
+  }
+
+  # Per-node extras on top of the common patch.
+  node_patches = {
+    controlplane = []
+    worker = [
+      yamlencode({
+        machine = {
+          kernel = {
+            modules = [
+              { name = "nvidia" },
+              { name = "nvidia_uvm" },
+              { name = "nvidia_drm" },
+              { name = "nvidia_modeset" },
+            ]
+          }
+          sysctls = {
+            "net.core.bpf_jit_harden" = "1"
+          }
+          # What the nvidia-device-plugin DaemonSet selects on (no NFD here).
+          nodeLabels = {
+            "nvidia.com/gpu.present" = "true"
+          }
+        }
+      })
+    ]
   }
 }
 
@@ -63,7 +105,7 @@ data "talos_machine_configuration" "this" {
   docs               = false
   examples           = false
 
-  config_patches = [
+  config_patches = concat([
     yamlencode({
       machine = {
         network = {
@@ -85,7 +127,7 @@ data "talos_machine_configuration" "this" {
         }
       }
     })
-  ]
+  ], local.node_patches[each.key])
 }
 
 data "talos_client_configuration" "this" {

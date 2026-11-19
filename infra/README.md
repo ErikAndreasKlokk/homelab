@@ -48,6 +48,10 @@ talosctl -n 192.168.1.152 apply-config --dry-run -f /tmp/worker.yaml
 
 `talos_machine_configuration_apply` uses `staged_if_needing_reboot`, so a change
 that needs a reboot is staged for the next reboot instead of rebooting the node.
+From Talos 1.14 that mode always resolves to `auto`; switch to `staged` then.
+
+The dry-run diff prints a few lines of context, which can include
+`cluster.id`/`cluster.secret`. Don't paste it anywhere public.
 
 ### Upgrading Talos / changing extensions
 

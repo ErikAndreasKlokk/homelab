@@ -1,0 +1,16 @@
+runtimeClassName: nvidia
+
+# One RTX 2080, several consumers (Jellyfin, Immich ML): advertise it as 4
+# time-sliced nvidia.com/gpu so they can share. No memory isolation between
+# them; fine for transcoding + inference.
+config:
+  default: default
+  map:
+    default: |-
+      version: v1
+      sharing:
+        timeSlicing:
+          renameByDefault: false
+          resources:
+            - name: nvidia.com/gpu
+              replicas: 4

@@ -44,6 +44,41 @@ Replacing a dead disk: partition the new disk with `sgdisk -R`, `pvcreate`,
 `vgextend pve`, `lvconvert --repair pve/root` (and `pve/swap`), then
 `proxmox-boot-tool format` + `init` its ESP.
 
-## GPU passthrough (RTX 2080 → worker VM)
+## GPU passthrough (RTX 2080 → worker VM) (done 2026-11-19)
 
-See the next section once done.
+The card is IOMMU group 16 on its own: `08:00.0` VGA `10de:1e87`, `.1` audio
+`10de:10f8`, `.2` USB `10de:1ad8`, `.3` USB-C UCSI `10de:1ad9`. The host binds
+all four to `vfio-pci` at boot. **The 5800X has no iGPU, so the host has no
+screen after boot;** use SSH or the web UI (and the cable trick in
+`README.md` if the network is wrong).
+
+```bash
+cat > /etc/modprobe.d/vfio.conf <<'CONF'
+options vfio-pci ids=10de:1e87,10de:10f8,10de:1ad8,10de:1ad9 disable_vga=1
+softdep nouveau pre: vfio-pci
+softdep nvidiafb pre: vfio-pci
+softdep snd_hda_intel pre: vfio-pci
+softdep xhci_pci pre: vfio-pci
+softdep i2c_nvidia_gpu pre: vfio-pci
+CONF
+printf 'blacklist nouveau\nblacklist nvidiafb\nblacklist i2c_nvidia_gpu\n' > /etc/modprobe.d/blacklist-nvidia-host.conf
+printf 'vfio\nvfio_iommu_type1\nvfio_pci\n' | tee -a /etc/initramfs-tools/modules > /etc/modules-load.d/vfio.conf
+# IOMMU is on by default on AMD; amd_iommu=on is not a valid value
+sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet iommu=pt"/' /etc/default/grub
+update-initramfs -u -k all && proxmox-boot-tool refresh && reboot
+```
+
+Check: `lspci -nnk -s 08:00` shows `vfio-pci` for all four functions.
+
+Everything after that is in tofu: the `rtx2080` PCI mapping, `hostpci0` on the
+worker VM (memory cut to 24 GB, since passthrough pins all guest RAM), and the
+worker's Talos image with `nvidia-open-gpu-kernel-modules-production` +
+`nvidia-container-toolkit-production` plus the NVIDIA kernel modules. Check on
+the node: `talosctl -n 192.168.1.152 read /proc/driver/nvidia/version`.
+
+## Host access for automation
+
+- `tofu@pve` with role `OpenTofu` on `/`, API token `tofu@pve!homelab`
+  (privilege separation off).
+- root SSH key `claude-homelab-admin` in `/root/.ssh/authorized_keys` (remove
+  that line to revoke).

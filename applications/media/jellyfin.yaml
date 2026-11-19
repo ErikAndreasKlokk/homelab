@@ -15,6 +15,9 @@ spec:
       labels:
         app: jellyfin
     spec:
+      # NVENC/NVDEC transcoding on the RTX 2080 (applications/nvidia-device-plugin).
+      # Turn it on in Jellyfin: Dashboard → Playback → Transcoding → NVIDIA NVENC.
+      runtimeClassName: nvidia
       securityContext:
         seccompProfile:
           type: RuntimeDefault
@@ -22,7 +25,14 @@ spec:
         - name: jellyfin
           image: lscr.io/linuxserver/jellyfin:latest
           imagePullPolicy: Always
+          resources:
+            limits:
+              nvidia.com/gpu: 1
           env:
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: all
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: compute,video,utility
             - name: PUID
               value: "1000"
             - name: PGID

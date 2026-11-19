@@ -26,3 +26,19 @@ immich:
 
 valkey:
   enabled: true
+
+# Face/object recognition and smart search on the RTX 2080
+# (applications/nvidia-device-plugin). The -cuda tag must match the server
+# version (chart default tag, currently v2.0.0).
+machine-learning:
+  controllers:
+    main:
+      pod:
+        runtimeClassName: nvidia
+      containers:
+        main:
+          image:
+            tag: v2.0.0-cuda
+          resources:
+            limits:
+              nvidia.com/gpu: 1

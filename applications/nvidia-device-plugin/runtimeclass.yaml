@@ -1,0 +1,8 @@
+# Provided by Talos' nvidia-container-toolkit extension on the worker.
+# Pods that use the GPU set `runtimeClassName: nvidia` and request
+# `nvidia.com/gpu: 1`.
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+  name: nvidia
+handler: nvidia

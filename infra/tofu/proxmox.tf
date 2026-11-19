@@ -4,6 +4,22 @@
 # reboot_after_update = false: a change that needs the VM offline fails the
 # apply instead of silently rebooting a node (and with one worker, every app).
 
+# GPU passthrough. The host must already bind the card to vfio-pci
+# (infra/proxmox-host.md); a mapping lets the API token attach it, since raw
+# PCI ids require root@pam.
+resource "proxmox_hardware_mapping_pci" "gpu" {
+  name    = "rtx2080"
+  comment = "RTX 2080 for the Talos worker (Jellyfin NVENC, Immich ML)"
+  map = [{
+    node         = var.proxmox_node
+    path         = "0000:08:00.0"
+    id           = "10de:1e87"
+    subsystem_id = "1462:3726"
+    iommu_group  = 16
+    comment      = "TU104 [GeForce RTX 2080 Rev. A] (MSI)"
+  }]
+}
+
 resource "proxmox_virtual_environment_vm" "controlplane" {
   node_name = var.proxmox_node
   vm_id     = 100
@@ -83,8 +99,19 @@ resource "proxmox_virtual_environment_vm" "worker" {
     type    = "x86-64-v2-AES"
   }
 
+  # 24 GB, not 26: with a PCI device attached, Proxmox pins all guest RAM up
+  # front, and 26 + 4 GB of VMs left the 32 GB host about 700 MB.
   memory {
-    dedicated = 26624
+    dedicated = 24576
+  }
+
+  # RTX 2080 (see proxmox_hardware_mapping_pci.gpu). Only the VGA function is
+  # passed; the card's audio/USB functions stay bound to vfio-pci on the host.
+  hostpci {
+    device  = "hostpci0"
+    mapping = proxmox_hardware_mapping_pci.gpu.name
+    pcie    = true
+    rombar  = true
   }
 
   disk {
