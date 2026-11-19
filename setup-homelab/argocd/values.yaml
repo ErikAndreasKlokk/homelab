@@ -15,6 +15,17 @@ configs:
           args: [ "kustomize build --enable-helm" ]
   params:
     server.insecure: true
+    # Chart 9 changed the default to "" — keep "sync" so removing an
+    # applications/<app> directory still deletes its Application.
+    applicationsetcontroller.policy: sync
+    # Argo CD 3.0 stopped writing per-resource health into the Application
+    # status; keep it so `kubectl get application -o json | jq .status.resources[].health`
+    # (the deploy check in CLAUDE.md) keeps working.
+    controller.resource.health.persist: "true"
+
+# No SSO; local admin only.
+dex:
+  enabled: false
 
 repoServer:
   extraContainers:
