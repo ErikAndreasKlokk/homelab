@@ -54,7 +54,7 @@ manually — it is not managed by ArgoCD.
 `applications/` — portfolio, budgeting, bolig, klokkprojects, immich, n8n, the
 media stack (jellyfin/sonarr/radarr/prowlarr/qbittorrent), monitoring
 (prometheus/grafana/alertmanager), loki, cloudnative-pg, minecraft,
-claude-code, playit-operator.
+playit-operator.
 
 Adding one is just a new directory under `applications/` with a
 `kustomization.yaml` — ArgoCD's ApplicationSet discovers it on push. See

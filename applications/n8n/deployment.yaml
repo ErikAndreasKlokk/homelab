@@ -26,8 +26,9 @@ spec:
           type: RuntimeDefault
       containers:
         - name: n8n
-          image: n8nio/n8n:latest
-          imagePullPolicy: Always
+          # Pinned by digest; bump via Renovate PRs, not a floating tag.
+          image: n8nio/n8n:2.48.6@sha256:eafe48609be09a2d56dd3628b29932a12c2e81a06ac5a309205652ea36146619
+          imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

@@ -196,7 +196,6 @@ subdomain requires no cert work — just an `HTTPRoute`.
 | `grafana.erikak.no` | Grafana | `monitoring` |
 | `jellyfin` / `sonarr` / `radarr` / `prowlarr` / `qbittorrent` `.erikak.no` | media stack | `media` |
 | `homelab.playit.plus` | Immich (via playit L4 tunnel) | `immich` |
-| `claude-code.<tailnet>.ts.net` | code-server | `claude-code` |
 
 ### The three non-HTTP exposure paths
 
@@ -220,10 +219,10 @@ Gateway API only routes HTTP. Three separate mechanisms cover everything else:
    resources declared in this repo; existing tunnels are still dashboard-managed.*
 
 3. **Tailscale (`setup-homelab/tailscale/`)** — private access with no public
-   surface at all. The Tailscale operator provides `ingressClassName: tailscale`;
-   `applications/claude-code/ingress.yaml` uses it so code-server is reachable
-   only from the tailnet at `https://claude-code.<tailnet>.ts.net`. Note the
-   operator is applied manually and is not reconciled by ArgoCD.
+   surface at all. The Tailscale operator provides `ingressClassName: tailscale`
+   for exposing a Service only on the tailnet (`https://<name>.<tailnet>.ts.net`);
+   nothing uses it at the moment. Note the operator is applied manually and is
+   not reconciled by ArgoCD.
 
 There is also a fourth, app-specific wrinkle: **`applications/immich/caddy-tls.yaml`**.
 playit's `.playit.plus` HTTPS tunnels forward raw TCP without terminating TLS, so
@@ -248,7 +247,7 @@ reclaimPolicy: Retain                     # deleting a PVC does NOT delete the d
 Implications that show up all over the manifests:
 
 - All volumes are **ReadWriteOnce and node-local**. Any Deployment mounting one
-  uses `strategy: type: Recreate` (see `claude-code`, `qbittorrent`) — the
+  uses `strategy: type: Recreate` (see `qbittorrent`) — the
   default RollingUpdate would deadlock, with the new pod waiting for a volume the
   old pod still holds.
 - There is no replication and no built-in backup. `Retain` is the only safety
@@ -334,7 +333,6 @@ also why sealed-secrets is step 1 of the bootstrap.
 | `loki` | logs (Loki + Alloy) | upstream | – | internal |
 | `cloudnative-pg` | Postgres operator | upstream | – | internal |
 | `minecraft`, `minecraft-hardcore` | game servers | `ghcr.io/itzg/minecraft-server:java25` | – | playit L4 (TCP 25565) |
-| `claude-code` | code-server + Claude Code dev pod | `ghcr.io/…/claude-workspace:main` | – | Tailscale only |
 | `playit-operator` | custom Rust operator for playit tunnels | `ghcr.io/…/playit-operator:main` | – | – |
 
 Two apps encode enough hard-won detail to call out:
@@ -353,14 +351,6 @@ NAT-PMP lease is 60 s and the forwarded port changes on every reconnect, so
 qBittorrent's API at runtime; a hardcoded port would never be the forwarded one.
 `FIREWALL_INPUT_PORTS: 8080` is required — without it Sonarr/Radarr cannot reach
 the WebUI and the liveness probe restarts the container in a loop.
-
-**`claude-code` — "code from my phone".** code-server plus a `remote-control`
-sidecar keeping a Claude session alive, on a shared `/home/coder` PVC that an
-init container seeds by cloning `claude-workspace` on first boot and
-fast-forwarding after. Root filesystem is intentionally writable (it's an
-interactive dev environment running npm installs). The Claude OAuth login is a
-one-time manual `claude` → `/login` inside the pod; until it exists the
-`remote-control` container crash-loops harmlessly.
 
 ---
 
