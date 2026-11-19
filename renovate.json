@@ -1,0 +1,53 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard", ":timezone(Europe/Oslo)"],
+  "schedule": ["before 7am on monday"],
+  "prConcurrentLimit": 10,
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "schedule": ["at any time"],
+    "labels": ["security"]
+  },
+  "kubernetes": {
+    "managerFilePatterns": ["/^(applications|setup-homelab)/.+\\.ya?ml$/"]
+  },
+  "ignorePaths": ["**/charts/**"],
+  "packageRules": [
+    {
+      "description": "Own images use the reused :main tag and are rolled out with `kubectl rollout restart`; nothing to bump.",
+      "matchPackageNames": ["ghcr.io/erikandreasklokk/**"],
+      "enabled": false
+    },
+    {
+      "description": "Pin third-party images by digest so floating tags (:latest, :java25, :2-alpine) only change through a PR.",
+      "matchDatasources": ["docker"],
+      "pinDigests": true
+    },
+    {
+      "description": "Digest refreshes and patch bumps for workload apps: ArgoCD deploys them on merge, so let them merge themselves.",
+      "matchFileNames": ["applications/**"],
+      "matchUpdateTypes": ["digest", "pin", "pinDigest", "patch"],
+      "automerge": true,
+      "automergeType": "branch"
+    },
+    {
+      "description": "One weekly PR for the media stack instead of five.",
+      "matchFileNames": ["applications/media/**"],
+      "groupName": "media stack"
+    },
+    {
+      "description": "Platform layer is applied by hand (kubectl kustomize --enable-helm ... | kubectl apply -f -), not by ArgoCD. Merging only changes git; flag it so it gets applied.",
+      "matchFileNames": ["setup-homelab/**", "!setup-homelab/storage/**"],
+      "automerge": false,
+      "labels": ["platform", "manual-apply"],
+      "prBodyNotes": ["⚠️ `setup-homelab/` is not reconciled by ArgoCD. After merging, apply it by hand: `kubectl kustomize --enable-helm <component>/ | kubectl apply -f -`."]
+    },
+    {
+      "description": "Major bumps always wait for a human, and only after being ticked on the dependency dashboard.",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "dependencyDashboardApproval": true,
+      "labels": ["major"]
+    }
+  ]
+}
