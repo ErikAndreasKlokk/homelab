@@ -64,3 +64,12 @@ spec:
         syncOptions:
           - ServerSideApply=true
           - RespectIgnoreDifferences=true
+          # On a fresh cluster, e.g. gateway's Certificate can sync before
+          # cert-manager's CRDs exist; skip the dry-run and keep retrying.
+          - SkipDryRunOnMissingResource=true
+        retry:
+          limit: 10
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 10m

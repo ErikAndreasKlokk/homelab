@@ -36,11 +36,11 @@
       "groupName": "media stack"
     },
     {
-      "description": "Platform layer is applied by hand (kubectl kustomize --enable-helm ... | kubectl apply -f -), not by ArgoCD. Merging only changes git; flag it so it gets applied.",
-      "matchFileNames": ["setup-homelab/**", "!setup-homelab/storage/**"],
+      "description": "Platform layer (CNI, cert-manager, ArgoCD itself...) is deployed by ArgoCD the moment it merges, so never let it merge itself.",
+      "matchFileNames": ["setup-homelab/**", "infra/**"],
       "automerge": false,
-      "labels": ["platform", "manual-apply"],
-      "prBodyNotes": ["⚠️ `setup-homelab/` is not reconciled by ArgoCD. After merging, apply it by hand: `kubectl kustomize --enable-helm <component>/ | kubectl apply -f -`."]
+      "labels": ["platform"],
+      "prBodyNotes": ["⚠️ Platform change: `setup-homelab/` is synced by ArgoCD's `platform` ApplicationSet on merge (except `tailscale/`, which is applied by hand). `infra/` changes need `tofu plan`/`apply`. Read the upstream upgrade notes first."]
     },
     {
       "description": "Major bumps always wait for a human, and only after being ticked on the dependency dashboard.",

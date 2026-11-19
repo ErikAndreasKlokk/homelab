@@ -27,8 +27,12 @@ Talos specifics that shape the config:
 
 - Static IPs live in the machine config under `machine.network.interfaces` — the
   boot-time `ip=` kernel parameter does not survive a reboot.
-- The Talos image is built at [factory.talos.dev](https://factory.talos.dev/)
-  with the `cloudflared` and `qemu-guest-agent` extensions.
+- Talos images come from [factory.talos.dev](https://factory.talos.dev/), with
+  schematics defined in `infra/tofu/talos.tf`: the control plane gets
+  `qemu-guest-agent`; the worker also gets the NVIDIA open GPU kernel modules
+  and container toolkit (the RTX 2080 is passed through to it).
+- Machine configs, Talos secrets and the Proxmox VMs are OpenTofu
+  (`infra/`); host-level Proxmox setup is in `infra/proxmox-host.md`.
 - etcd / kube-scheduler / kube-controller-manager / kube-proxy scraping is
   **disabled** in `applications/monitoring/values.yaml` — Talos does not expose
   them on the standard ports, so scraping them only produces noise.
@@ -42,32 +46,33 @@ Talos specifics that shape the config:
 
 ```
 homelab/
-├── setup-homelab/     # platform layer — bootstrapped by hand, once, in order
-│   ├── sealed-secrets/    #  1. secret encryption (must exist before anything seals)
-│   ├── cilium/            #  2. CNI, L2 announcements, Gateway API, LB IP pool
-│   ├── gateway/           #  3. GatewayClass + Gateway + wildcard cert
-│   ├── cert-manager/      #  4. Let's Encrypt via Cloudflare DNS-01
-│   ├── cloudflared/       #  5. Cloudflare Tunnel (public ingress)
-│   ├── playitgg/          #  6. L4 (TCP/UDP) exposure, paid tier
-│   ├── argocd/            #  7. GitOps controller — after this, git drives everything
+├── infra/             # below the cluster: OpenTofu (Proxmox VMs, Talos) + host notes
+├── setup-homelab/     # platform layer — reconciled by ArgoCD ("platform" ApplicationSet)
+│   ├── platform/          #  AppProject + ApplicationSet for the components below
+│   ├── sealed-secrets/    #  secret encryption
+│   ├── cilium/            #  CNI, L2 announcements, Gateway API, LB IP pool
+│   ├── gateway/           #  GatewayClass + Gateway + wildcard cert
+│   ├── cert-manager/      #  Let's Encrypt via Cloudflare DNS-01
+│   ├── cloudflared/       #  Cloudflare Tunnel (public ingress)
+│   ├── playitgg/          #  L4 (TCP/UDP) exposure, paid tier
+│   ├── argocd/            #  ArgoCD itself (self-managed after bootstrap)
 │   ├── storage/           #  local-path provisioner (own ApplicationSet + AppProject)
-│   └── tailscale/         #  Tailscale operator — applied manually, NOT ArgoCD-managed
+│   └── tailscale/         #  Tailscale operator — applied manually, NOT ArgoCD-managed, unused
 └── applications/      # workload layer — auto-discovered by ArgoCD
     ├── project.yaml         # AppProject "applications"
     ├── application-set.yaml # git-directory generator over applications/*
     └── <app>/               # one directory == one ArgoCD Application == one namespace
 ```
 
-The split matters: **`setup-homelab/` is imperative-once, `applications/` is
-declarative-forever.** Everything under `applications/` is reconciled
-continuously; the platform components are applied by hand with
+Both layers are reconciled continuously, but **platform apps are deliberately
+more conservative**: an explicit list instead of a directory scan, `prune:
+false`, and no resources-finalizer. Removing a file or deleting an
+Application never deletes the CNI, cert-manager or ArgoCD; that cleanup is
+manual. Only Cilium and ArgoCD have to be applied by hand on a fresh cluster
+(see the rebuild steps in `CLAUDE.md`); ArgoCD then adopts them.
 
-```bash
-kubectl kustomize --enable-helm setup-homelab/<component>/ | kubectl apply -f -
-```
-
-`setup-homelab/tailscale/` is the exception to the exception — it is a platform
-component that was applied manually and is deliberately not under ArgoCD.
+`setup-homelab/tailscale/` is the exception: applied manually, not under
+ArgoCD, and currently unused.
 
 ---
 
@@ -371,18 +376,19 @@ the WebUI and the liveness probe restarts the container in a loop.
 7. Mounting an RWO PVC? Set `strategy: type: Recreate`.
 8. Push to `main`. ArgoCD picks it up; there is no `kubectl apply` step.
 
-## 11. Known-noisy signals (not bugs)
+## 11. Sync status
 
-Some resource kinds report `OutOfSync` or `Degraded` permanently because their
-controllers mutate the live object or ArgoCD has no health check for the CRD.
-This rolls up into a misleading app-level status:
+Since ArgoCD 3.6 (2026-11-19), apps with `ServerSideApply=true` diff on the
+server side, so the old permanent `OutOfSync` on CNPG `Cluster`s and
+`HTTPRoute`s is gone and all apps normally show `Synced`/`Healthy`. Treat
+drift as real now.
 
-- `Cluster` (CloudNative-PG) and `HTTPRoute` (Gateway API) — perpetually
-  `OutOfSync`; no `ignoreDifferences` is configured for them.
-- `SealedSecret` — reports `Degraded`; a known ArgoCD health-check quirk.
+The one deliberate exception: the cilium chart regenerates `cilium-ca` and
+`hubble-server-certs` on every render, so the platform ApplicationSet ignores
+their `/data`.
 
 When verifying a deploy, check **per-resource** health of the `Deployment` and any
-`Job`, not the rolled-up app status:
+`Job` (kept in the Application because `controller.resource.health.persist` is on):
 
 ```bash
 kubectl get application <app> -n argocd -o json \

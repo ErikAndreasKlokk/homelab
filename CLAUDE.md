@@ -35,28 +35,35 @@ homelab/
 └── applications/     # User-facing apps (discovered by ArgoCD ApplicationSet)
 ```
 
-**Platform layer** (`setup-homelab/`) must be bootstrapped manually in this order. Each component is applied with:
-```bash
-kubectl kustomize --enable-helm setup-homelab/<component>/ | kubectl apply -f -
-```
+**Platform layer** (`setup-homelab/`) is reconciled by ArgoCD too: the
+`platform` ApplicationSet (`setup-homelab/platform/`) covers `sealed-secrets`,
+`cilium`, `gateway`, `cert-manager`, `cloudflared`, `playitgg` and `argocd`
+itself, and the `storage` ApplicationSet covers local-path. Platform apps have
+**prune off and no resources-finalizer**: removing a file or an Application
+never deletes the CNI/ArgoCD/cert-manager; clean up by hand. Only
+`setup-homelab/tailscale/` is still applied by hand (and nothing uses it).
 
-1. `sealed-secrets` — encrypts secrets stored in git
-2. `cilium` — CNI, load balancing (L2 announcements), Gateway API. **Before applying**, install the Gateway API CRDs first:
-   ```bash
-   kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml
-   ```
-   Also update `cilium/ip-pool.yaml` with your own LAN IP range.
-3. `gateway` — Kubernetes Gateway API config (wildcard `*.erikak.no`, IP `192.168.1.153`)
-4. `cert-manager` — TLS via Let's Encrypt + Cloudflare DNS validation
-5. `cloudflared` — Cloudflare Tunnel for external access
-6. `playitgg` — additional port forwarding for TCP/UDP services (paid tier)
-7. `argocd` — GitOps controller; after this, the repo drives everything
+The layer below (Proxmox VMs, Talos) is OpenTofu in `infra/` — see
+`infra/README.md`.
 
-Then apply storage and the applications layer:
-```bash
-kubectl kustomize --enable-helm setup-homelab/storage/ | kubectl apply -f -
-kubectl kustomize --enable-helm applications/ | kubectl apply -f -
-```
+**Rebuilding from scratch** (ArgoCD ≥ 3.3 CRDs are too big for client-side
+apply, so everything is `--server-side`):
+
+1. Nodes: `infra/tofu` → `tofu apply`, then `talosctl kubeconfig`.
+2. Gateway API CRDs:
+   `kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml`
+3. Cilium (nothing schedules without a CNI):
+   `kubectl kustomize --enable-helm setup-homelab/cilium | kubectl apply --server-side -f -`
+4. Restore the sealed-secrets keys **before** the controller starts, or every
+   SealedSecret in git is undecryptable:
+   `kubectl apply -f ~/backups/sealed-secrets-keys-<date>.yaml`
+5. ArgoCD:
+   `kubectl kustomize --enable-helm setup-homelab/argocd | kubectl apply --server-side -f -`
+6. Hand the rest to ArgoCD:
+   `for k in setup-homelab/platform setup-homelab/storage applications; do kubectl apply --server-side -k $k; done`
+
+ArgoCD then adopts cilium/argocd and installs everything else; platform apps
+retry until their CRDs exist.
 
 **Applications layer** (`applications/`) is auto-discovered by ArgoCD's `application-set.yaml`. Each app subdirectory is its own ArgoCD Application. Apps include: budgeting (custom image from ghcr.io), n8n, Immich, CloudNative-PG, Minecraft, portfolio.
 
@@ -106,11 +113,14 @@ If the ArgoCD UI throws errors after initial setup, restart the application cont
 kubectl -n argocd rollout restart statefulset argocd-application-controller
 ```
 
-**Expected ArgoCD drift (not a real problem):** Several resource kinds report `OutOfSync` / `Degraded` permanently because their controllers mutate the live object or have no ArgoCD health check — this rolls up to a misleading app-level `OutOfSync`/`Degraded`. Known cases:
-- `Cluster` (CloudNative-PG) and `HTTPRoute` (Gateway API) — perpetually `OutOfSync` (controller adds status/default fields; no `ignoreDifferences` configured).
-- `SealedSecret` — shows `Degraded` health (known ArgoCD health-check quirk for the CRD).
+**ArgoCD is v3.6** (since 2026-11-19). Apps use `ServerSideApply=true`, which
+in 3.6 also means server-side diff, so the old permanent `OutOfSync` on CNPG
+`Cluster`s and `HTTPRoute`s is gone, and the `media` app (gluetun native sidecar)
+syncs again. If an app does show unexpected drift, look at it; it's no longer
+"known noise".
 
-When verifying a deploy, check the **per-resource** health of `Deployment` and any `Job` — not the rolled-up app status:
+When verifying a deploy, check the **per-resource** health of `Deployment` and any `Job`
+(per-resource health is kept in the Application via `controller.resource.health.persist`):
 ```bash
 kubectl get application <app> -n argocd -o json | jq -r '.status.resources[] | "\(.kind)/\(.name): \(.status) \(.health.status)"'
 ```
@@ -118,6 +128,6 @@ Don't try to "fix" the CNPG/HTTPRoute/SealedSecret drift unless that's the actua
 
 ## Talos Cluster Setup (reference)
 
-Talos image is built at [factory.talos.dev](https://factory.talos.dev/) — the current image includes the `cloudflared` and `qemu-guest-agent` extensions. VM sizing used: 4 CPU / 4GB RAM / 100GB disk for the controlplane node (`ctrl-01`); worker node (`work-01`) sized as desired.
+VMs, Talos machine configs/secrets and installer images (factory.talos.dev schematics) are managed by OpenTofu in `infra/tofu` — read `infra/README.md` before changing them, and always `talosctl apply-config --dry-run` a rendered config first. Control plane `ctrl-01`: 4 CPU / 4 GB / 200 GB; worker `work-01`: 12 CPU / 24 GB / 3.5 TB + the RTX 2080 (PCI passthrough).
 
-Static IPs are set in the machine config (not via DHCP) under `machine.network.interfaces`. After generating configs with `talosctl gen config`, edit `_out/controlplane.yaml` and `_out/worker.yaml` to add static network config before applying — the boot-time `ip=` kernel parameter is lost on reboot.
+Static IPs are set in the machine config (not via DHCP) under `machine.network.interfaces`, generated from `var.network` in `infra/tofu/variables.tf` — the boot-time `ip=` kernel parameter is lost on reboot. The original `talosctl gen config` output (`~/_out` in WSL) has been imported into tofu state; keep it only as an encrypted backup.

@@ -17,34 +17,20 @@ GitOps setup, storage, secrets, conventions for adding an app.
 
 ## install order
 
-Bootstrap the platform layer by hand, in this order:
-
-- [setup-homelab/sealed-secrets](setup-homelab/sealed-secrets)
-- [setup-homelab/cilium](setup-homelab/cilium) — install the Gateway API CRDs first, and set your own LAN range in `ip-pool.yaml`
-- [setup-homelab/gateway](setup-homelab/gateway)
-- [setup-homelab/cert-manager](setup-homelab/cert-manager)
-- [setup-homelab/cloudflared](setup-homelab/cloudflared)
-- [setup-homelab/playitgg](setup-homelab/playitgg)
-- [setup-homelab/argocd](setup-homelab/argocd)
-
-Each one is applied with:
-
-```bash
-kubectl kustomize --enable-helm setup-homelab/<component>/ | kubectl apply -f -
-```
-
-Gateway API CRDs, before cilium:
+The VMs and Talos come from OpenTofu ([infra/](infra/README.md)). On the
+cluster, only Cilium and ArgoCD are applied by hand; ArgoCD then adopts them
+and installs the rest of `setup-homelab/` (the `platform` ApplicationSet),
+storage and `applications/`:
 
 ```bash
 kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml
+kubectl kustomize --enable-helm setup-homelab/cilium | kubectl apply --server-side -f -
+kubectl apply -f ~/backups/sealed-secrets-keys-<date>.yaml   # restore keys before the controller starts
+kubectl kustomize --enable-helm setup-homelab/argocd | kubectl apply --server-side -f -
+for k in setup-homelab/platform setup-homelab/storage applications; do kubectl apply --server-side -k $k; done
 ```
 
-Then storage and the apps — after this ArgoCD takes over and git drives everything:
-
-```bash
-kubectl kustomize --enable-helm setup-homelab/storage/ | kubectl apply -f -
-kubectl kustomize --enable-helm applications/ | kubectl apply -f -
-```
+Set your own LAN range in `setup-homelab/cilium/ip-pool.yaml` first.
 
 [setup-homelab/tailscale](setup-homelab/tailscale) is optional and applied
 manually — it is not managed by ArgoCD.
