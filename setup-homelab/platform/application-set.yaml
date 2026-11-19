@@ -1,0 +1,66 @@
+# One Application per platform component. An explicit list, not a directory
+# scan: adding something here is deliberate.
+#
+# Safer defaults than applications/:
+#   - no resources-finalizer: deleting an Application never deletes the CNI,
+#     cert-manager or ArgoCD itself, it just stops managing them
+#   - prune: false: a file removed from git leaves the live object alone;
+#     clean up by hand
+#   - selfHeal: true: manual drift is still reverted
+#
+# Not here: storage (its own ApplicationSet in ../storage) and tailscale
+# (applied by hand, unused).
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - { name: sealed-secrets, namespace: kube-system }
+          - { name: cilium, namespace: kube-system }
+          - { name: gateway, namespace: gateway }
+          - { name: cert-manager, namespace: cert-manager }
+          - { name: cloudflared, namespace: cloudflared }
+          - { name: playitgg, namespace: playitgg }
+          - { name: argocd, namespace: argocd }
+  template:
+    metadata:
+      name: '{{ .name }}'
+      labels:
+        homelab/layer: platform
+    spec:
+      project: platform
+      source:
+        repoURL: https://github.com/erikandreasklokk/homelab
+        targetRevision: HEAD
+        path: 'setup-homelab/{{ .name }}'
+        plugin:
+          name: kustomize-build-with-helm
+      destination:
+        name: in-cluster
+        namespace: '{{ .namespace }}'
+      # The cilium chart generates a new CA and Hubble certs on every render
+      # (genCA); without this every sync would rotate them.
+      ignoreDifferences:
+        - group: ""
+          kind: Secret
+          name: cilium-ca
+          namespace: kube-system
+          jsonPointers: [/data]
+        - group: ""
+          kind: Secret
+          name: hubble-server-certs
+          namespace: kube-system
+          jsonPointers: [/data]
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: false
+        syncOptions:
+          - ServerSideApply=true
+          - RespectIgnoreDifferences=true

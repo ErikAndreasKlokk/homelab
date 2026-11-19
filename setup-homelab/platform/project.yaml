@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  description: The cluster's own plumbing (setup-homelab/*), reconciled by ArgoCD.
+  sourceRepos:
+    - 'https://github.com/erikandreasklokk/homelab'
+  destinations:
+    - { server: '*', namespace: kube-system }
+    - { server: '*', namespace: cilium-secrets }
+    - { server: '*', namespace: gateway }
+    - { server: '*', namespace: cert-manager }
+    - { server: '*', namespace: cloudflared }
+    - { server: '*', namespace: playitgg }
+    - { server: '*', namespace: argocd }
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
