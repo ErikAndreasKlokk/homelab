@@ -1,0 +1,30 @@
+# This repo is public. Nothing that grants access to the cluster belongs here.
+
+# OpenTofu: state and plans are encrypted, but still never committed.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+*.auto.tfvars
+secrets.tfvars
+
+# Talos / Kubernetes credentials and generated machine configs
+_out/
+talosconfig
+*.talosconfig
+kubeconfig*
+secrets.yaml
+controlplane.yaml
+worker.yaml
+
+# Unsealed secrets (seal them first: kubeseal -f secret.yaml -w sealed.yaml)
+secret.yaml
+*.secret.yaml
+.env
+.env.*
+*.env
+
+# Helm charts pulled by `kustomize build --enable-helm`
+applications/*/charts/
+setup-homelab/*/charts/
